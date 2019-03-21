@@ -2,6 +2,8 @@
 
 namespace TorneLIB\Module;
 
+use TorneLIB\Module\Network\Statics;
+
 class DeprecateNet
 {
     public $isDeprecated = true;
@@ -10,6 +12,17 @@ class DeprecateNet
     {
 
     }
+
+    /**
+     * @param bool $returnProtocol
+     * @return bool|string
+     * @since 6.1.0
+     */
+    public function isSecureHttp($returnProtocol = false)
+    {
+        return Statics::getCurrentServerProtocol($returnProtocol);
+    }
+
 
     /**
      * base64_encode

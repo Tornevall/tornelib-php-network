@@ -26,6 +26,7 @@
 namespace TorneLIB\Module;
 
 use TorneLIB\Module\DeprecateNet;
+use TorneLIB\Module\Network\Statics;
 
 if (!defined('NETCURL_NETWORK_RELEASE')) {
     define('NETCURL_NETWORK_RELEASE', '6.1.0');
@@ -40,7 +41,7 @@ class Network
      * @var DeprecateNet
      * @since 6.1.0
      */
-    private $Deprecated;
+    private $DEPRECATED;
 
     /**
      * @var array $proxyHeaders List of scannable proxy headers from webserver.
@@ -77,7 +78,7 @@ class Network
      */
     public function __construct()
     {
-        $this->Deprecated = new DeprecateNet();
+        $this->DEPRECATED = new DeprecateNet();
         $this->fetchProxyHeaders();
     }
 
@@ -114,6 +115,13 @@ class Network
         return $return;
     }
 
+    /**
+     * @return mixed
+     */
+    public function getIsSecureHttp($returnProtocol = false)
+    {
+        return Statics::getCurrentServerProtocol($returnProtocol);
+    }
 
     /**
      * @param $name
@@ -125,8 +133,8 @@ class Network
     {
         $return = null;
 
-        if (!isset($this->{$name}) && isset($this->Deprecated->{$name})) {
-            $return = $this->Deprecated->{$name};
+        if (!isset($this->{$name}) && isset($this->DEPRECATED->{$name})) {
+            $return = $this->DEPRECATED->{$name};
             if (is_null($return)) {
                 // Immediately return if still null.
                 return $return;
@@ -147,6 +155,57 @@ class Network
     /**
      * @param $name
      * @param $arguments
+     * @return void|null
+     * @throws \Exception
+     * @since 6.1.0
+     */
+    private function get($name)
+    {
+        $return = null;
+
+        $what = lcfirst(substr($name, 3));
+        if (isset($this->{$what})) {
+            return $this->{$what};
+        }
+
+        throw new \Exception('No existence.');
+    }
+
+    /**
+     * @param $name
+     * @param $arguments
+     * @return mixed
+     * @throws \Exception
+     * @since 6.1.0
+     */
+    private function getDeprecatedResponse($name, $arguments)
+    {
+        if (method_exists($this->DEPRECATED, $name)) {
+            return call_user_func_array(array($this->DEPRECATED, $name), $arguments);
+        }
+
+        throw new \Exception('No existence.');
+    }
+
+    /**
+     * @param $name
+     * @param $arguments
+     * @return mixed
+     * @throws \Exception
+     * @since 6.1.0
+     */
+    private function getStaticResponse($name, $arguments)
+    {
+        if (method_exists('TorneLIB\Module\Network\Statics', $name)) {
+            return call_user_func_array(array('TorneLIB\Module\Network\Statics', $name), $arguments);
+        }
+
+        throw new \Exception(sprintf('No static method with name %s via %s.', $name, __CLASS__), 1);
+    }
+
+    /**
+     * @param $name
+     * @param $arguments
      * @return mixed
      * @throws \Exception
      * @since 6.1.0
@@ -155,18 +214,20 @@ class Network
     {
         $return = null;
 
-        if (method_exists($this->Deprecated, $name)) {
-            return call_user_func_array(array($this->Deprecated, $name), $arguments);
+        try {
+            $return = $this->getStaticResponse($name, $arguments);
+        } catch (\Exception $e) {
+        }
+
+        try {
+            $return = $this->getDeprecatedResponse($name, $arguments);
+        } catch (\Exception $e) {
         }
 
         if (substr($name, 0, 3) === 'get') {
-            $what = lcfirst(substr($name, 3));
-            if (isset($this->{$what})) {
-                $return = $this->{$what};
-                if (is_null($return)) {
-                    // Return directly if null here.
-                    return $return;
-                }
+            try {
+                $return = $this->get($name);
+            } catch (\Exception $e) {
             }
         }
 

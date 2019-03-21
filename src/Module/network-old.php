@@ -528,35 +528,7 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exi
             return $httpHost;
         }
 
-        /**
-         * @param bool $returnProtocol
-         *
-         * @return bool|string
-         * @since 6.0.15
-         */
-        public static function getCurrentServerProtocol($returnProtocol = false)
-        {
-            if (isset($_SERVER['HTTPS'])) {
-                if ($_SERVER['HTTPS'] == "on") {
-                    if (!$returnProtocol) {
-                        return true;
-                    } else {
-                        return "https";
-                    }
-                } else {
-                    if (!$returnProtocol) {
-                        return false;
-                    } else {
-                        return "http";
-                    }
-                }
-            }
-            if (!$returnProtocol) {
-                return false;
-            } else {
-                return "http";
-            }
-        }
+
 
         /**
          * Extract domain name (zone name) from hostname

@@ -8,10 +8,13 @@ use PHPUnit\Framework\TestCase;
 class NetworkTest extends TestCase
 {
     /**
-     * @var MODULE_NETWORK
+     * @var Network
      */
     private $NETWORK;
 
+    /**
+     * @var \TorneLIB\MODULE_NETWORK
+     */
     private $ModNet;
 
     public function setUp()
@@ -51,6 +54,14 @@ class NetworkTest extends TestCase
     }
 
     /**
+     * @test
+     */
+    public function getDeprecatedMethod()
+    {
+        static::assertTrue($this->NETWORK->getCurrentServerProtocol(true) === 'http');
+    }
+
+    /**
      * @test Test backward compatibility.
      */
     public function deprecatedModuleFunc()
@@ -76,6 +87,26 @@ class NetworkTest extends TestCase
         } catch (\Exception $e) {
             static::assertTrue($e->getCode() === 1);
         }
+    }
+
+    /**
+     * @test
+     */
+    public function getDeprecatedHttps()
+    {
+        $_SERVER['HTTPS'] = true;
+        static::assertTrue($this->NETWORK->isSecureHttp());
+        unset($_SERVER['HTTPS']);
+    }
+
+    /**
+     * @test
+     */
+    public function getIsSecureHttp()
+    {
+        $_SERVER['HTTPS'] = true;
+        static::assertTrue($this->NETWORK->getIsSecureHttp());
+        unset($_SERVER['HTTPS']);
     }
 
 }
