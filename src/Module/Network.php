@@ -25,7 +25,7 @@
 
 namespace TorneLIB\Module;
 
-use TorneLIB\Module\DeprecateNet;
+use TorneLIB\Module\Network\Address;
 use TorneLIB\Module\Network\Statics;
 
 if (!defined('NETCURL_NETWORK_RELEASE')) {
@@ -38,39 +38,19 @@ if (!defined('NETCURL_NETWORK_MODIFY')) {
 class Network
 {
     /**
-     * @var DeprecateNet
+     * @var $DEPRECATED DeprecateNet
      * @since 6.1.0
      */
     private $DEPRECATED;
 
-    /**
-     * @var array $proxyHeaders List of scannable proxy headers from webserver.
-     *
-     * @since 6.0
-     */
-    private $proxyHeaders = array(
-        'HTTP_VIA',
-        'HTTP_X_FORWARDED_FOR',
-        'HTTP_FORWARDED_FOR',
-        'HTTP_X_FORWARDED',
-        'HTTP_FORWARDED',
-        'HTTP_CLIENT_IP',
-        'HTTP_FORWARDED_FOR_IP',
-        'VIA',
-        'X_FORWARDED_FOR',
-        'FORWARDED_FOR',
-        'X_FORWARDED',
-        'FORWARDED',
-        'CLIENT_IP',
-        'FORWARDED_FOR_IP',
-        'HTTP_PROXY_CONNECTION'
+    private $classMap = array(
+        'TorneLIB\Module\Network\Address'
     );
+
     /**
-     * @var array $proxyAddressList Address list with catched proxy addresses if published by client.
-     *
-     * @since 6.1.0
+     * @var $ADDRESS Address
      */
-    private $proxyAddressList = array();
+    public $ADDRESS;
 
     /**
      * MODULE_NETWORK constructor.
@@ -79,21 +59,7 @@ class Network
     public function __construct()
     {
         $this->DEPRECATED = new DeprecateNet();
-        $this->fetchProxyHeaders();
-    }
-
-    /**
-     * Pick up data from browser client if any.
-     */
-    private function fetchProxyHeaders()
-    {
-        if (isset($_SERVER) && isset($_SERVER['REMOTE_ADDR'])) {
-            foreach ($this->proxyHeaders as $headerKey) {
-                $this->proxyAddressList[$headerKey] = isset($_SERVER[$headerKey]) ? $_SERVER[$headerKey] : null;
-            }
-        }
-
-        return $this->proxyAddressList;
+        $this->ADDRESS = new Address();
     }
 
     /**
@@ -105,14 +71,7 @@ class Network
      */
     public function getProxyData($withValues = true)
     {
-        $return = array();
-        foreach ($this->proxyAddressList as $key => $value) {
-            if (($withValues && !empty($value)) || !$withValues) {
-                $return[$key] = $value;
-            }
-        }
-
-        return $return;
+        return $this->ADDRESS->getProxyData($withValues);
     }
 
     /**
@@ -121,35 +80,6 @@ class Network
     public function getIsSecureHttp($returnProtocol = false)
     {
         return Statics::getCurrentServerProtocol($returnProtocol);
-    }
-
-    /**
-     * @param $name
-     * @return void|null
-     * @throws \Exception
-     * @since 6.1.0
-     */
-    public function __get($name)
-    {
-        $return = null;
-
-        if (!isset($this->{$name}) && isset($this->DEPRECATED->{$name})) {
-            $return = $this->DEPRECATED->{$name};
-            if (is_null($return)) {
-                // Immediately return if still null.
-                return $return;
-            }
-        }
-
-        if (is_null($return)) {
-            throw new \Exception(sprintf(
-                'Variable "%s" for %s does not exist or has been deprecated',
-                $name,
-                __CLASS__
-            ), 1);
-        }
-
-        return $return;
     }
 
     /**
@@ -169,6 +99,22 @@ class Network
         }
 
         throw new \Exception('No existence.');
+    }
+
+    private function getByClassMap($name, $arguments)
+    {
+
+        foreach ($this->classMap as $className) {
+            if (class_exists($className)) {
+                $methods = get_class_methods($className);
+                if (in_array($name, $methods)) {
+                    $instance = new $className();
+                    return call_user_func_array(array($instance, $name), $arguments);
+                }
+            }
+
+            throw new \Exception('No existence.');
+        }
     }
 
     /**
@@ -232,6 +178,13 @@ class Network
         }
 
         if (is_null($return)) {
+            try {
+                $return = $this->getByClassMap($name, $arguments);
+            } catch (\Exception $e) {
+            }
+        }
+
+        if (is_null($return)) {
             throw new \Exception(sprintf(
                 'Method "%s" for %s does not exist or has been deprecated',
                 $name,
@@ -242,4 +195,32 @@ class Network
         return $return;
     }
 
+    /**
+     * @param $name
+     * @return void|null
+     * @throws \Exception
+     * @since 6.1.0
+     */
+    public function __get($name)
+    {
+        $return = null;
+
+        if (!isset($this->{$name}) && isset($this->DEPRECATED->{$name})) {
+            $return = $this->DEPRECATED->{$name};
+            if (is_null($return)) {
+                // Immediately return if still null.
+                return $return;
+            }
+        }
+
+        if (is_null($return)) {
+            throw new \Exception(sprintf(
+                'Variable "%s" for %s does not exist or has been deprecated',
+                $name,
+                __CLASS__
+            ), 1);
+        }
+
+        return $return;
+    }
 }
