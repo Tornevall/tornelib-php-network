@@ -1,8 +1,10 @@
 <?php
 
-namespace TorneLIB\Deprecated;
+namespace TorneLIB\Module;
 
-class DeprecateNet {
+class DeprecateNet
+{
+    public $isDeprecated = true;
 
     public function __get($name)
     {

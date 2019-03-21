@@ -12,11 +12,14 @@ class NetworkTest extends TestCase
      */
     private $NETWORK;
 
+    private $ModNet;
+
     public function setUp()
     {
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
         $_SERVER['HTTP_VIA'] = '127.0.0.1';
         $this->NETWORK = new Network();
+        $this->ModNet = new \TorneLIB\MODULE_NETWORK();
     }
 
     /**
@@ -32,9 +35,7 @@ class NetworkTest extends TestCase
      */
     public function getProxyHeaders()
     {
-        $result = $this->NETWORK->getProxyHeaders();
-
-        static::assertCount(15, $result);
+        static::assertCount(15, $this->NETWORK->getProxyHeaders());
     }
 
     /**
@@ -48,4 +49,33 @@ class NetworkTest extends TestCase
             static::assertTrue($e->getCode() === 1);
         }
     }
+
+    /**
+     * @test Test backward compatibility.
+     */
+    public function deprecatedModuleFunc()
+    {
+        static::assertCount(15, $this->ModNet->getProxyHeaders());
+    }
+
+    /**
+     * @test Test backward compatibility.
+     */
+    public function deprecatedModuleVar()
+    {
+        static::assertTrue($this->ModNet->isDeprecated);
+    }
+
+    /**
+     * @test Test unexistent variables and backward compatiblity.
+     */
+    public function deprecatedUnexistentModuleVar()
+    {
+        try {
+            $var = $this->ModNet->thisDoesNotExist;
+        } catch (\Exception $e) {
+            static::assertTrue($e->getCode() === 1);
+        }
+    }
+
 }

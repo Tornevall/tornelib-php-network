@@ -16,6 +16,9 @@
         }
     ],
     "autoload": {
+        "files": [
+            "src/Network.php"
+        ],
         "psr-4": {
             "TorneLIB\\": "src"
         }

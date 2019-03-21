@@ -25,7 +25,7 @@
 
 namespace TorneLIB\Module;
 
-use TorneLIB\Deprecated\DeprecateNet;
+use TorneLIB\Module\DeprecateNet;
 
 if (!defined('NETCURL_NETWORK_RELEASE')) {
     define('NETCURL_NETWORK_RELEASE', '6.1.0');
@@ -77,6 +77,7 @@ class Network
      */
     public function __construct()
     {
+        $this->Deprecated = new DeprecateNet();
         $this->fetchProxyHeaders();
     }
 
@@ -116,11 +117,31 @@ class Network
 
     /**
      * @param $name
+     * @return void|null
+     * @throws \Exception
      * @since 6.1.0
      */
     public function __get($name)
     {
+        $return = null;
 
+        if (!isset($this->{$name}) && isset($this->Deprecated->{$name})) {
+            $return = $this->Deprecated->{$name};
+            if (is_null($return)) {
+                // Immediately return if still null.
+                return $return;
+            }
+        }
+
+        if (is_null($return)) {
+            throw new \Exception(sprintf(
+                'Variable "%s" for %s does not exist or has been deprecated',
+                $name,
+                __CLASS__
+            ), 1);
+        }
+
+        return $return;
     }
 
     /**
