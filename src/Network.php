@@ -33,6 +33,7 @@ class MODULE_NETWORK
     /**
      * @param $name
      * @since 6.1.0
+     * @return void|null
      */
     public function __get($name)
     {

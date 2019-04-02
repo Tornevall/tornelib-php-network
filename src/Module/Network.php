@@ -76,11 +76,39 @@ class Network
 
     /**
      * @return mixed
+     * @since 6.1.0
      */
     public function getIsSecureHttp($returnProtocol = false)
     {
         return Statics::getCurrentServerProtocol($returnProtocol);
     }
+
+    /**
+     * Make sure we always return a "valid" http-host from HTTP_HOST. If the variable is missing, this will fall back to localhost.
+     *
+     * @return string
+     * @sice 6.0.15
+     */
+    public function getHttpHost()
+    {
+        $httpHost = (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : "");
+        if (empty($httpHost)) {
+            $httpHost = "localhost";
+        }
+
+        return $httpHost;
+    }
+
+    /**
+     * @return bool|string
+     * @since 6.1.0
+     */
+    public function getProtocol()
+    {
+        return Statics::getCurrentServerProtocol(true);
+    }
+
+    /*** Functions below has a key role in deprecation and compatibility ***/
 
     /**
      * @param $name

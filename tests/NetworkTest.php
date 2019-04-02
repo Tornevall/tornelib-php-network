@@ -109,4 +109,20 @@ class NetworkTest extends TestCase
         unset($_SERVER['HTTPS']);
     }
 
+    /**
+     * @test
+     */
+    public function getProtocol()
+    {
+        static::assertTrue($this->NETWORK->getProtocol() === 'http');
+    }
+
+    /**
+     * @test
+     */
+    public function getHttpHost()
+    {
+        static::assertTrue($this->NETWORK->getHttpHost() === 'localhost');
+    }
+
 }

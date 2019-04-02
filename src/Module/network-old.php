@@ -470,63 +470,6 @@ if (!class_exists('MODULE_NETWORK', NETCURL_CLASS_EXISTS_AUTOLOAD) && !class_exi
             return false;
         }
 
-        /**
-         * Returns a list of header where the browser client might reveal anything about proxy usage.
-         *
-         * @return array
-         */
-        public function getProxyHeaders()
-        {
-            return $this->clientAddressList;
-        }
-
-        /**
-         * Return correct data on https-detection
-         *
-         * @param bool $returnProtocol
-         *
-         * @return bool|string
-         * @since 6.0.3
-         */
-        public function getProtocol($returnProtocol = false)
-        {
-            if (isset($_SERVER['HTTPS'])) {
-                if ($_SERVER['HTTPS'] == "on") {
-                    if (!$returnProtocol) {
-                        return true;
-                    } else {
-                        return "https";
-                    }
-                } else {
-                    if (!$returnProtocol) {
-                        return false;
-                    } else {
-                        return "http";
-                    }
-                }
-            }
-            if (!$returnProtocol) {
-                return false;
-            } else {
-                return "http";
-            }
-        }
-
-        /**
-         * Make sure we always return a "valid" http-host from HTTP_HOST. If the variable is missing, this will fall back to localhost.
-         *
-         * @return string
-         * @sice 6.0.15
-         */
-        public function getHttpHost()
-        {
-            $httpHost = (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : "");
-            if (empty($httpHost)) {
-                $httpHost = "localhost";
-            }
-
-            return $httpHost;
-        }
 
 
 
