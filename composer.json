@@ -4,7 +4,8 @@
     "minimum-stability": "stable",
     "license": "Apache-2.0",
     "require": {
-        "php": ">=5.4"
+        "php": ">=5.4",
+        "phpunit/phpunit": "^7.5"
     },
     "authors": [
         {
@@ -16,10 +17,10 @@
     ],
     "autoload": {
         "files": [
-            "src/init.php"
+            "src/Network.php"
         ],
         "psr-4": {
-            "TorneLIB\\": "src/"
+            "TorneLIB\\": "src"
         }
     }
 }
