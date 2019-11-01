@@ -43,9 +43,9 @@ class Network
      */
     private $DEPRECATED;
 
-    private $classMap = array(
-        'TorneLIB\Module\Network\Address'
-    );
+    private $classMap = [
+        'TorneLIB\Module\Network\Address',
+    ];
 
     /**
      * @var $ADDRESS Address
@@ -137,7 +137,7 @@ class Network
                 $methods = get_class_methods($className);
                 if (in_array($name, $methods)) {
                     $instance = new $className();
-                    return call_user_func_array(array($instance, $name), $arguments);
+                    return call_user_func_array([$instance, $name], $arguments);
                 }
             }
 
@@ -155,7 +155,7 @@ class Network
     private function getDeprecatedResponse($name, $arguments)
     {
         if (method_exists($this->DEPRECATED, $name)) {
-            return call_user_func_array(array($this->DEPRECATED, $name), $arguments);
+            return call_user_func_array([$this->DEPRECATED, $name], $arguments);
         }
 
         throw new \Exception('No existence.');
@@ -171,7 +171,7 @@ class Network
     private function getStaticResponse($name, $arguments)
     {
         if (method_exists('TorneLIB\Module\Network\Statics', $name)) {
-            return call_user_func_array(array('TorneLIB\Module\Network\Statics', $name), $arguments);
+            return call_user_func_array(['TorneLIB\Module\Network\Statics', $name], $arguments);
         }
 
         throw new \Exception(sprintf('No static method with name %s via %s.', $name, __CLASS__), 1);
