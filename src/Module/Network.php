@@ -25,6 +25,7 @@
 
 namespace TorneLIB\Module;
 
+use TorneLIB\IO\Data\Strings;
 use TorneLIB\Module\Network\Address;
 use TorneLIB\Module\Network\Proxy;
 use TorneLIB\Module\Network\Statics;
@@ -176,7 +177,7 @@ class Network
      */
     private function getDeprecatedResponse($name, $arguments)
     {
-        if (method_exists($this->DEPRECATED, $name)) {
+        if (method_exists($this->DEPRECATED, $name) || method_exists($this->DEPRECATED, Strings::returnCamelCase($name))) {
             return call_user_func_array([$this->DEPRECATED, $name], $arguments);
         }
 
