@@ -33,7 +33,7 @@ if (!defined('NETCURL_NETWORK_RELEASE')) {
     define('NETCURL_NETWORK_RELEASE', '6.1.0');
 }
 if (!defined('NETCURL_NETWORK_MODIFY')) {
-    define('NETCURL_NETWORK_MODIFY', '2019-01-30');
+    define('NETCURL_NETWORK_MODIFY', '2019-11-28');
 }
 
 class Network
@@ -44,6 +44,9 @@ class Network
      */
     private $DEPRECATED;
 
+    /**
+     * @var array $classMap Defines where to find the modern versions and methods in this module.
+     */
     private $classMap = [
         'TorneLIB\Module\Network\Proxy',
         'TorneLIB\Module\Network\Address',
@@ -84,6 +87,7 @@ class Network
     }
 
     /**
+     * @param bool $returnProtocol
      * @return mixed
      * @since 6.1.0
      */
@@ -131,7 +135,6 @@ class Network
 
     /**
      * @param $name
-     * @param $arguments
      * @return void|null
      * @throws \Exception
      * @since 6.1.0
