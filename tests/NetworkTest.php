@@ -2,8 +2,9 @@
 
 require_once(__DIR__ . '/../vendor/autoload.php');
 
-use TorneLIB\Module\Network;
 use PHPUnit\Framework\TestCase;
+use TorneLIB\IO\Data\Strings;
+use TorneLIB\Module\Network;
 
 class NetworkTest extends TestCase
 {
@@ -125,4 +126,13 @@ class NetworkTest extends TestCase
         static::assertTrue($this->NETWORK->getHttpHost() === 'localhost');
     }
 
+    /**
+     * Convert snakecases to camelcase.
+     *
+     * @test
+     */
+    public function getCamelCased()
+    {
+        static::assertTrue(Strings::returnCamelCase('base64url_encode') === "base64urlEncode");
+    }
 }
