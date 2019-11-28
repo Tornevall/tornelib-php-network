@@ -10,7 +10,10 @@ class DeprecateNet
 
     public function __get($name)
     {
-
+        switch ($name) {
+            default:
+                throw new \Exception(sprintf('Method "%s" does not exist in the deprecated library.', $name), 404);
+        }
     }
 
     /**
