@@ -46,6 +46,7 @@ class Network
 
     private $classMap = [
         'TorneLIB\Module\Network\Proxy',
+        'TorneLIB\Module\Network\Address',
     ];
 
     /**
