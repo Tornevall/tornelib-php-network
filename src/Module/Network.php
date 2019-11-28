@@ -26,6 +26,7 @@
 namespace TorneLIB\Module;
 
 use TorneLIB\Module\Network\Address;
+use TorneLIB\Module\Network\Proxy;
 use TorneLIB\Module\Network\Statics;
 
 if (!defined('NETCURL_NETWORK_RELEASE')) {
@@ -43,9 +44,14 @@ class Network
      */
     private $DEPRECATED;
 
-    private $classMap = array(
-        'TorneLIB\Module\Network\Address'
-    );
+    private $classMap = [
+        'TorneLIB\Module\Network\Proxy',
+    ];
+
+    /**
+     * @var $PROXY Proxy
+     */
+    public $PROXY;
 
     /**
      * @var $ADDRESS Address
@@ -54,11 +60,13 @@ class Network
 
     /**
      * MODULE_NETWORK constructor.
+     *
      * @since 6.1.0
      */
     public function __construct()
     {
         $this->DEPRECATED = new DeprecateNet();
+        $this->PROXY = new Proxy();
         $this->ADDRESS = new Address();
     }
 
@@ -71,7 +79,7 @@ class Network
      */
     public function getProxyData($withValues = true)
     {
-        return $this->ADDRESS->getProxyData($withValues);
+        return $this->PROXY->getProxyData($withValues);
     }
 
     /**
@@ -84,7 +92,8 @@ class Network
     }
 
     /**
-     * Make sure we always return a "valid" http-host from HTTP_HOST. If the variable is missing, this will fall back to localhost.
+     * Make sure we always return a "valid" http-host from HTTP_HOST. If the variable is missing, this will fall back
+     * to localhost.
      *
      * @return string
      * @sice 6.0.15
@@ -106,6 +115,15 @@ class Network
     public function getProtocol()
     {
         return Statics::getCurrentServerProtocol(true);
+    }
+
+    /**
+     * @return bool
+     * @since 6.1.0
+     */
+    public function getIsHttps()
+    {
+        return (bool)Statics::getCurrentServerProtocol();
     }
 
     /*** Functions below has a key role in deprecation and compatibility ***/
@@ -137,7 +155,7 @@ class Network
                 $methods = get_class_methods($className);
                 if (in_array($name, $methods)) {
                     $instance = new $className();
-                    return call_user_func_array(array($instance, $name), $arguments);
+                    return call_user_func_array([$instance, $name], $arguments);
                 }
             }
 
@@ -155,7 +173,7 @@ class Network
     private function getDeprecatedResponse($name, $arguments)
     {
         if (method_exists($this->DEPRECATED, $name)) {
-            return call_user_func_array(array($this->DEPRECATED, $name), $arguments);
+            return call_user_func_array([$this->DEPRECATED, $name], $arguments);
         }
 
         throw new \Exception('No existence.');
@@ -171,7 +189,7 @@ class Network
     private function getStaticResponse($name, $arguments)
     {
         if (method_exists('TorneLIB\Module\Network\Statics', $name)) {
-            return call_user_func_array(array('TorneLIB\Module\Network\Statics', $name), $arguments);
+            return call_user_func_array(['TorneLIB\Module\Network\Statics', $name], $arguments);
         }
 
         throw new \Exception(sprintf('No static method with name %s via %s.', $name, __CLASS__), 1);
