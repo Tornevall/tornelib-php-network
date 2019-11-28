@@ -2,11 +2,18 @@
 
 namespace TorneLIB\Module\Network;
 
+/**
+ * Class Statics Static requests without dependencies.
+ *
+ * @package TorneLIB\Module\Network
+ */
 abstract class Statics
 {
     /**
-     * @param bool $returnProtocol
+     * Return information about currently used server protocol (HTTP or HTTPS).
+     * If returnprotocol is false, returned result will be true for https.
      *
+     * @param bool $returnProtocol
      * @return bool|string
      * @since 6.0.15
      */
@@ -15,22 +22,27 @@ abstract class Statics
         if (isset($_SERVER['HTTPS'])) {
             if ($_SERVER['HTTPS'] == "on") {
                 if (!$returnProtocol) {
-                    return true;
+                    $return = true;
                 } else {
-                    return "https";
+                    $return = "https";
                 }
             } else {
                 if (!$returnProtocol) {
-                    return false;
+                    $return = false;
                 } else {
-                    return "http";
+                    $return = "http";
                 }
             }
+
+            return $return;
         }
+
         if (!$returnProtocol) {
-            return false;
+            $return = false;
         } else {
-            return "http";
+            $return = "http";
         }
+
+        return $return;
     }
 }
