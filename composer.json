@@ -1,6 +1,6 @@
 {
     "name": "tornevall/tornelib-php-network",
-    "description": "Networking Module",
+    "description": "Network related handler.",
     "minimum-stability": "stable",
     "license": "Apache-2.0",
     "require": {
