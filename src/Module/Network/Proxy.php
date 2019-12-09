@@ -26,6 +26,7 @@ class Proxy
         'FORWARDED_FOR_IP',
         'HTTP_PROXY_CONNECTION'
     );
+
     /**
      * @var array $proxyAddressList Address list with catched proxy addresses if published by client.
      *
@@ -50,7 +51,7 @@ class Proxy
      */
     private function fetchProxyHeaders()
     {
-        if (isset($_SERVER) && isset($_SERVER['REMOTE_ADDR'])) {
+        if (isset($_SERVER) && is_array($_SERVER)) {
             foreach ($this->proxyHeaders as $headerKey) {
                 $this->proxyAddressList[$headerKey] = isset($_SERVER[$headerKey]) ? $_SERVER[$headerKey] : null;
             }

@@ -135,4 +135,13 @@ class networkTest extends TestCase
     {
         static::assertTrue(Strings::returnCamelCase('base64url_encode') === "base64urlEncode");
     }
+
+    /**
+     * @test
+     */
+    public function testDeprecatedSnakes()
+    {
+        $encodedString = $this->ModNet->base64url_encode('TEST');
+        static::assertTrue($encodedString === 'VEVTVA');
+    }
 }
