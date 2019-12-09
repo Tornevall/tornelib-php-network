@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use TorneLIB\IO\Data\Strings;
 use TorneLIB\Module\Network;
 
-class NetworkTest extends TestCase
+class networkTest extends TestCase
 {
     /**
      * @var Network
