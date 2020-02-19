@@ -7,16 +7,6 @@ use TorneLIB\MODULE_NETWORK;
 class moduleNetworkTest extends TestCase
 {
     /**
-     * @var MODULE_NETWORK
-     */
-    private $NETWORK;
-
-    public function setUp()
-    {
-        $this->NETWORK = new MODULE_NETWORK();
-    }
-
-    /**
      * @test
      */
     public function testGetProxyData()
