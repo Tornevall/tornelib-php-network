@@ -1,6 +1,6 @@
 {
     "name": "tornevall/tornelib-php-network",
-    "description": "Network related handler.",
+    "description": "Network related utility/library that handles network related information thas is not pure communication.",
     "minimum-stability": "stable",
     "license": "Apache-2.0",
     "require": {
