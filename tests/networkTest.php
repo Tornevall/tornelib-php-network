@@ -9,29 +9,13 @@ use TorneLIB\Module\Network;
 class networkTest extends TestCase
 {
     /**
-     * @var Network
-     */
-    private $NETWORK;
-
-    /**
-     * @var \TorneLIB\MODULE_NETWORK
-     */
-    private $ModNet;
-
-    public function setUp()
-    {
-        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
-        $_SERVER['HTTP_VIA'] = '127.0.0.1';
-        $this->NETWORK = new Network();
-        $this->ModNet = new \TorneLIB\MODULE_NETWORK();
-    }
-
-    /**
      * @test Get Proxy data from network client.
      */
     public function getProxyData()
     {
-        static::assertCount(1, $this->NETWORK->getProxyData());
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        $_SERVER['HTTP_VIA'] = '127.0.0.1';
+        static::assertCount(1, (new Network())->getProxyData());
     }
 
     /**
@@ -39,7 +23,7 @@ class networkTest extends TestCase
      */
     public function getProxyHeaders()
     {
-        static::assertCount(15, $this->NETWORK->getProxyHeaders());
+        static::assertCount(15, (new Network())->getProxyHeaders());
     }
 
     /**
@@ -48,7 +32,7 @@ class networkTest extends TestCase
     public function getObsoleteMethod()
     {
         try {
-            $this->NETWORK->getWhatDoesNotExist();
+            (new Network())->getWhatDoesNotExist();
         } catch (Exception $e) {
             static::assertTrue($e->getCode() === 1);
         }
@@ -59,7 +43,7 @@ class networkTest extends TestCase
      */
     public function getDeprecatedMethod()
     {
-        static::assertTrue($this->NETWORK->getCurrentServerProtocol(true) === 'http');
+        static::assertTrue((new Network())->getCurrentServerProtocol(true) === 'http');
     }
 
     /**
@@ -67,7 +51,7 @@ class networkTest extends TestCase
      */
     public function deprecatedModuleFunc()
     {
-        static::assertCount(15, $this->ModNet->getProxyHeaders());
+        static::assertCount(15, (new \TorneLIB\MODULE_NETWORK())->getProxyHeaders());
     }
 
     /**
@@ -75,7 +59,7 @@ class networkTest extends TestCase
      */
     public function deprecatedModuleVar()
     {
-        static::assertTrue($this->ModNet->isDeprecated);
+        static::assertTrue((new \TorneLIB\MODULE_NETWORK())->isDeprecated);
     }
 
     /**
@@ -84,7 +68,7 @@ class networkTest extends TestCase
     public function deprecatedUnexistentModuleVar()
     {
         try {
-            $var = $this->ModNet->thisDoesNotExist;
+            $var = (new \TorneLIB\MODULE_NETWORK())->thisDoesNotExist;
         } catch (\Exception $e) {
             static::assertTrue($e->getCode() === 1);
         }
@@ -96,7 +80,7 @@ class networkTest extends TestCase
     public function getDeprecatedHttps()
     {
         $_SERVER['HTTPS'] = true;
-        static::assertTrue($this->NETWORK->isSecureHttp());
+        static::assertTrue((new Network())->isSecureHttp());
         unset($_SERVER['HTTPS']);
     }
 
@@ -106,7 +90,7 @@ class networkTest extends TestCase
     public function getIsSecureHttp()
     {
         $_SERVER['HTTPS'] = true;
-        static::assertTrue($this->NETWORK->getIsSecureHttp());
+        static::assertTrue((new Network())->getIsSecureHttp());
         unset($_SERVER['HTTPS']);
     }
 
@@ -115,7 +99,7 @@ class networkTest extends TestCase
      */
     public function getProtocol()
     {
-        static::assertTrue($this->NETWORK->getProtocol() === 'http');
+        static::assertTrue((new Network())->getProtocol() === 'http');
     }
 
     /**
@@ -123,7 +107,7 @@ class networkTest extends TestCase
      */
     public function getHttpHost()
     {
-        static::assertTrue($this->NETWORK->getHttpHost() === 'localhost');
+        static::assertTrue((new Network())->getHttpHost() === 'localhost');
     }
 
     /**
@@ -141,7 +125,7 @@ class networkTest extends TestCase
      */
     public function testDeprecatedSnakes()
     {
-        $encodedString = $this->ModNet->base64url_encode('TEST');
+        $encodedString = (new \TorneLIB\MODULE_NETWORK())->base64url_encode('TEST');
         static::assertTrue($encodedString === 'VEVTVA');
     }
 }
