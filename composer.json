@@ -1,13 +1,11 @@
 {
     "name": "tornevall/tornelib-php-network",
-    "description": "Network related handler.",
-    "minimum-stability": "stable",
+    "description": "Network related utility/library that handles network related information thas is not pure communication.",
+    "minimum-stability": "dev",
     "license": "Apache-2.0",
     "require": {
-        "php": ">=5.4",
         "tornevall/tornelib-php-exceptions": "dev-develop/6.1",
-        "tornevall/tornelib-php-io": "dev-develop/6.1",
-        "phpunit/phpunit": "^7.5"
+        "tornevall/tornelib-php-io": "dev-develop/6.1"
     },
     "authors": [
         {
