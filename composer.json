@@ -4,7 +4,7 @@
     "minimum-stability": "dev",
     "license": "Apache-2.0",
     "require": {
-        "tornevall/tornelib-php-errorhandler": "dev-develop/master",
+        "tornevall/tornelib-php-errorhandler": "dev-master",
         "tornevall/tornelib-php-io": "dev-develop/6.1"
     },
     "authors": [
