@@ -1,4 +1,6 @@
 composer.lock
+Deprecation
 source/Modules/network-old.php
 vendor
 .idea
+build
