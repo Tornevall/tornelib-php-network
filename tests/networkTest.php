@@ -5,6 +5,7 @@ require_once(__DIR__ . '/../vendor/autoload.php');
 use PHPUnit\Framework\TestCase;
 use TorneLIB\IO\Data\Strings;
 use TorneLIB\Module\Network;
+use TorneLIB\MODULE_NETWORK;
 
 class networkTest extends TestCase
 {
@@ -51,7 +52,7 @@ class networkTest extends TestCase
      */
     public function deprecatedModuleFunc()
     {
-        static::assertCount(15, (new \TorneLIB\MODULE_NETWORK())->getProxyHeaders());
+        static::assertCount(15, (new MODULE_NETWORK())->getProxyHeaders());
     }
 
     /**
@@ -59,7 +60,7 @@ class networkTest extends TestCase
      */
     public function deprecatedModuleVar()
     {
-        static::assertTrue((new \TorneLIB\MODULE_NETWORK())->isDeprecated);
+        static::assertTrue((new MODULE_NETWORK())->isDeprecated);
     }
 
     /**
@@ -68,7 +69,7 @@ class networkTest extends TestCase
     public function deprecatedUnexistentModuleVar()
     {
         try {
-            $var = (new \TorneLIB\MODULE_NETWORK())->thisDoesNotExist;
+            $var = (new MODULE_NETWORK())->thisDoesNotExist;
         } catch (\Exception $e) {
             static::assertTrue($e->getCode() === 1);
         }
@@ -125,7 +126,7 @@ class networkTest extends TestCase
      */
     public function testDeprecatedSnakes()
     {
-        $encodedString = (new \TorneLIB\MODULE_NETWORK())->base64url_encode('TEST');
+        $encodedString = (new MODULE_NETWORK())->base64url_encode('TEST');
         static::assertTrue($encodedString === 'VEVTVA');
     }
 }

@@ -2,6 +2,8 @@
 
 namespace TorneLIB;
 
+use TorneLIB\Module\Network;
+
 class MODULE_NETWORK
 {
     /**
@@ -16,7 +18,7 @@ class MODULE_NETWORK
      */
     public function __construct()
     {
-        $this->NETWORK = new \TorneLIB\Module\Network();
+        $this->NETWORK = new Network();
     }
 
     /**
