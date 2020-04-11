@@ -2,13 +2,40 @@
 
 namespace TorneLIB\Module;
 
+use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Module\Network\Statics;
 use TorneLIB\IO\Data\Strings;
+use TorneLIB\Module\Bit;
 
+/**
+ * Class DeprecateNet
+ *
+ * Network Module Deprecation Class.
+ *
+ * @package TorneLIB\Module
+ */
 class DeprecateNet
 {
+    /**
+     * @var bool $isDeprecated If this is true while you are running something, you'll now you're soon out of time.
+     * @since 6.1.0
+     */
     public $isDeprecated = true;
 
+    /**
+     * @var $BIT Bit
+     */
+    public $BIT;
+
+    public function __construct()
+    {
+        $this->BIT = new Bit();
+    }
+
+    /**
+     * @param $name
+     * @throws \Exception
+     */
     public function __get($name)
     {
         $camelCase = Strings::returnCamelCase($name);
@@ -17,7 +44,7 @@ class DeprecateNet
             default:
                 die($camelCase);
 
-                throw new \Exception(sprintf('Method "%s" does not exist in the deprecated library.', $name), 404);
+                throw new ExceptionHandler(sprintf('Method "%s" does not exist in the deprecated library.', $name), 404);
         }
     }
 

@@ -25,6 +25,8 @@
 
 namespace TorneLIB\Module;
 
+use TorneLIB\Exception\Constants;
+use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\IO\Data\Strings;
 use TorneLIB\Module\Network\Address;
 use TorneLIB\Module\Network\Proxy;
@@ -149,7 +151,7 @@ class Network
             return $this->{$what};
         }
 
-        throw new \Exception('No existence.');
+        throw new ExceptionHandler('Variable does not exist.', Constants::LIB_CONFIGWRAPPER_VAR_NOT_SET);
     }
 
     private function getByClassMap($name, $arguments)
@@ -265,7 +267,7 @@ class Network
         }
 
         if (is_null($return)) {
-            throw new \Exception(sprintf(
+            throw new ExceptionHandler(sprintf(
                 'Variable "%s" for %s does not exist or has been deprecated',
                 $name,
                 __CLASS__
