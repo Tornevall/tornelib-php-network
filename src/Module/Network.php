@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright 2019 Tomas Tornevall & Tornevall Networks
+ * Copyright 2020 Tomas Tornevall & Tornevall Networks
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,12 @@
 
 namespace TorneLIB\Module;
 
+use Exception;
 use TorneLIB\Exception\Constants;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\IO\Data\Strings;
 use TorneLIB\Module\Network\Address;
+use TorneLIB\Module\Network\NetWrapper;
 use TorneLIB\Module\Network\Proxy;
 use TorneLIB\Module\Network\Statics;
 
@@ -49,6 +51,7 @@ class Network
 
     /**
      * @var array $classMap Defines where to find the modern versions and methods in this module.
+     * @since 6.1.0
      */
     private $classMap = [
         'TorneLIB\Module\Network\Proxy',
@@ -57,6 +60,7 @@ class Network
 
     /**
      * @var $PROXY Proxy
+     * @since 6.1.0
      */
     public $PROXY;
 
@@ -134,12 +138,116 @@ class Network
         return (bool)Statics::getCurrentServerProtocol();
     }
 
+    /**
+     * @param $gitRequest
+     * @return array
+     * @since 6.1.0
+     */
+    private function getGitsTagsRegEx($gitRequest, $numericsOnly = false, $numericsSanitized = false)
+    {
+        $return = [];
+        preg_match_all("/refs\/tags\/(.*?)\n/s", $gitRequest, $tagMatches);
+        if (isset($tagMatches[1]) && is_array($tagMatches[1])) {
+            $tagList = $tagMatches[1];
+            foreach ($tagList as $tag) {
+                if (!preg_match("/\^/", $tag)) {
+                    if ($numericsOnly) {
+                        if (($currentTag = $this->getGitTagsSanitized($tag, $numericsSanitized))) {
+                            $return[] = $currentTag;
+                        }
+                    } else {
+                        if (!isset($return[$tag])) {
+                            $return[$tag] = $tag;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $this->getGitTagsUnAssociated($return);
+    }
+
+    /**
+     * @param array $return
+     * @return array
+     * @since 6.1.0
+     */
+    private function getGitTagsUnAssociated($return = [])
+    {
+        $newArray = [];
+        if (count($return)) {
+            asort($return, SORT_NATURAL);
+            $newArray = [];
+            foreach ($return as $arrayKey => $arrayValue) {
+                $newArray[] = $arrayValue;
+            }
+        }
+
+        if (count($newArray)) {
+            $return = $newArray;
+        }
+
+        return $return;
+    }
+
+    /**
+     * @param $tagString
+     * @param bool $numericsSanitized
+     * @return string
+     * @since 6.1.0
+     */
+    private function getGitTagsSanitized($tagString, $numericsSanitized = false)
+    {
+        $return = '';
+        $splitTag = explode(".", $tagString);
+
+        $tagArrayUnCombined = [];
+        foreach ($splitTag as $tagValue) {
+            if (is_numeric($tagValue)) {
+                $tagArrayUnCombined[] = $tagValue;
+            } else {
+                if ($numericsSanitized) {
+                    // Sanitize string if content is dual.
+                    $numericStringOnly = preg_replace("/[^0-9$]/is", '', $tagValue);
+                    $tagArrayUnCombined[] = $numericStringOnly;
+                }
+            }
+        }
+
+        if (count($tagArrayUnCombined)) {
+            $return = implode('.', $tagArrayUnCombined);
+        }
+
+        return $return;
+    }
+
+    /**
+     * getGitTagsByUrl
+     *
+     * From 6.1, the $keepCredentials has no effect.
+     *
+     * @param $url
+     * @param bool $numericsOnly
+     * @param bool $numericsSanitized
+     * @return array
+     * @throws ExceptionHandler
+     * @since 6.0.4
+     */
+    public function getGitTagsByUrl($url, $numericsOnly = false, $numericsSanitized = false)
+    {
+        $url .= "/info/refs?service=git-upload-pack";
+        $gitRequest = (new NetWrapper())->request($url);
+        return $this->getGitsTagsRegEx($gitRequest->getBody());
+    }
+
+
+
     /*** Functions below has a key role in deprecation and compatibility ***/
 
     /**
      * @param $name
      * @return void|null
-     * @throws \Exception
+     * @throws Exception
      * @since 6.1.0
      */
     private function get($name)
@@ -151,12 +259,21 @@ class Network
             return $this->{$what};
         }
 
-        throw new ExceptionHandler('Variable does not exist.', Constants::LIB_CONFIGWRAPPER_VAR_NOT_SET);
+        throw new ExceptionHandler(
+            'Variable does not exist.',
+            Constants::LIB_CONFIGWRAPPER_VAR_NOT_SET
+        );
     }
 
+    /**
+     * @param $name
+     * @param $arguments
+     * @return mixed
+     * @throws Exception
+     * @since 6.1.0
+     */
     private function getByClassMap($name, $arguments)
     {
-
         foreach ($this->classMap as $className) {
             if (class_exists($className)) {
                 $methods = get_class_methods($className);
@@ -166,7 +283,15 @@ class Network
                 }
             }
 
-            throw new \Exception('No existence.');
+            throw new ExceptionHandler(
+                sprintf(
+                    '%sException: No method with name %s found %s.',
+                    __FUNCTION__,
+                    $name,
+                    __CLASS__
+                ),
+                Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
+            );
         }
     }
 
@@ -174,23 +299,33 @@ class Network
      * @param $name
      * @param $arguments
      * @return mixed
-     * @throws \Exception
+     * @throws ExceptionHandler
      * @since 6.1.0
      */
     private function getDeprecatedResponse($name, $arguments)
     {
-        if (method_exists($this->DEPRECATED, $name) || method_exists($this->DEPRECATED, Strings::returnCamelCase($name))) {
+        if (method_exists($this->DEPRECATED, $name) ||
+            method_exists($this->DEPRECATED, Strings::returnCamelCase($name))
+        ) {
             return call_user_func_array([$this->DEPRECATED, $name], $arguments);
         }
 
-        throw new \Exception('No existence.');
+        throw new ExceptionHandler(
+            sprintf(
+                '%sException: No method with name %s found %s.',
+                __FUNCTION__,
+                $name,
+                __CLASS__
+            ),
+            Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
+        );
     }
 
     /**
      * @param $name
      * @param $arguments
      * @return mixed
-     * @throws \Exception
+     * @throws ExceptionHandler
      * @since 6.1.0
      */
     private function getStaticResponse($name, $arguments)
@@ -199,14 +334,21 @@ class Network
             return call_user_func_array(['TorneLIB\Module\Network\Statics', $name], $arguments);
         }
 
-        throw new \Exception(sprintf('No static method with name %s via %s.', $name, __CLASS__), 1);
+        throw new ExceptionHandler(
+            sprintf(
+                'No static method with name %s via %s.',
+                $name,
+                __CLASS__
+            ),
+            Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
+        );
     }
 
     /**
      * @param $name
      * @param $arguments
      * @return mixed
-     * @throws \Exception
+     * @throws ExceptionHandler
      * @since 6.1.0
      */
     public function __call($name, $arguments)
@@ -215,34 +357,37 @@ class Network
 
         try {
             $return = $this->getStaticResponse($name, $arguments);
-        } catch (\Exception $e) {
+        } catch (ExceptionHandler $e) {
         }
 
         try {
             $return = $this->getDeprecatedResponse($name, $arguments);
-        } catch (\Exception $e) {
+        } catch (ExceptionHandler $e) {
         }
 
         if (substr($name, 0, 3) === 'get') {
             try {
                 $return = $this->get($name);
-            } catch (\Exception $e) {
+            } catch (ExceptionHandler $e) {
             }
         }
 
         if (is_null($return)) {
             try {
                 $return = $this->getByClassMap($name, $arguments);
-            } catch (\Exception $e) {
+            } catch (ExceptionHandler $e) {
             }
         }
 
         if (is_null($return)) {
-            throw new \Exception(sprintf(
-                'Method "%s" for %s does not exist or has been deprecated',
-                $name,
-                __CLASS__
-            ), 1);
+            throw new ExceptionHandler(
+                sprintf(
+                    'Method "%s" for %s does not exist or has been deprecated',
+                    $name,
+                    __CLASS__
+                ),
+                Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
+            );
         }
 
         return $return;
@@ -251,7 +396,7 @@ class Network
     /**
      * @param $name
      * @return void|null
-     * @throws \Exception
+     * @throws ExceptionHandler
      * @since 6.1.0
      */
     public function __get($name)
@@ -267,11 +412,14 @@ class Network
         }
 
         if (is_null($return)) {
-            throw new ExceptionHandler(sprintf(
-                'Variable "%s" for %s does not exist or has been deprecated',
-                $name,
-                __CLASS__
-            ), 1);
+            throw new ExceptionHandler(
+                sprintf(
+                    'Variable "%s" for %s does not exist or has been deprecated',
+                    $name,
+                    __CLASS__
+                ),
+                Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
+            );
         }
 
         return $return;

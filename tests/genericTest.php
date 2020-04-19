@@ -3,11 +3,13 @@
 require_once(__DIR__ . '/../vendor/autoload.php');
 
 use PHPUnit\Framework\TestCase;
+use TorneLIB\Exception\Constants;
+use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\IO\Data\Strings;
 use TorneLIB\Module\Network;
 use TorneLIB\MODULE_NETWORK;
 
-class networkTest extends TestCase
+class genericTest extends TestCase
 {
     /**
      * @test Get Proxy data from network client.
@@ -28,14 +30,17 @@ class networkTest extends TestCase
     }
 
     /**
-     * @test What happens when obsolete or removed methods are accessed.
+     * @test
+     * What happens when obsolete or removed methods are accessed.
      */
     public function getObsoleteMethod()
     {
         try {
             (new Network())->getWhatDoesNotExist();
-        } catch (Exception $e) {
-            static::assertTrue($e->getCode() === 1);
+        } catch (ExceptionHandler $e) {
+            static::assertTrue(
+                $e->getCode() === Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
+            );
         }
     }
 
@@ -71,7 +76,9 @@ class networkTest extends TestCase
         try {
             $var = (new MODULE_NETWORK())->thisDoesNotExist;
         } catch (\Exception $e) {
-            static::assertTrue($e->getCode() === 1);
+            static::assertTrue(
+                $e->getCode() === Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
+            );
         }
     }
 
@@ -128,5 +135,29 @@ class networkTest extends TestCase
     {
         $encodedString = (new MODULE_NETWORK())->base64url_encode('TEST');
         static::assertTrue($encodedString === 'VEVTVA');
+    }
+
+    /**
+     * @test
+     * @throws \TorneLIB\Exception\ExceptionHandler
+     */
+    public function getGitTagsNetcurl()
+    {
+        static::assertGreaterThan(
+            2,
+            (new Network())->getGitTagsByUrl("https://bitbucket.tornevall.net/scm/lib/tornelib-php-netcurl.git")
+        );
+    }
+
+    /**
+     * @test
+     * @throws \TorneLIB\Exception\ExceptionHandler
+     */
+    public function getGitTagsNetcurlBucket()
+    {
+        static::assertGreaterThan(
+            2,
+            (new Network())->getGitTagsByUrl("https://bitbucket.org/resursbankplugins/resurs-ecomphp/src/master/")
+        );
     }
 }

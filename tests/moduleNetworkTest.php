@@ -16,4 +16,8 @@ class moduleNetworkTest extends TestCase
         $LOCAL = new TorneLIB\Module\Network\Proxy();
         static::assertTrue(count($LOCAL->getProxyData()) > 0 ? true : false);
     }
+
+    public function net() {
+
+    }
 }
