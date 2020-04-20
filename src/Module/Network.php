@@ -149,7 +149,7 @@ class Network
      * @return array
      * @throws ExceptionHandler
      * @since 6.0.4
-     * @deprecated
+     * @deprecated Method moved to netcurl-6.1, use that directly instead of this old reference pointer.
      */
     public function getGitTagsByUrl($url, $numericsOnly = false, $numericsSanitized = false)
     {
