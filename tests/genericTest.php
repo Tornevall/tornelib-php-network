@@ -76,7 +76,7 @@ class genericTest extends TestCase
     public function deprecatedUnexistentModuleVar()
     {
         try {
-            $var = (new MODULE_NETWORK())->thisDoesNotExist;
+            (new MODULE_NETWORK())->thisDoesNotExist;
         } catch (\Exception $e) {
             static::assertTrue(
                 $e->getCode() === Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE

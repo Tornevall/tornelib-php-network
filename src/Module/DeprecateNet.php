@@ -32,22 +32,6 @@ class DeprecateNet
         $this->BIT = new Bit();
     }
 
-    /**
-     * @param $name
-     * @throws \Exception
-     */
-    public function __get($name)
-    {
-        $camelCase = Strings::returnCamelCase($name);
-
-        switch ($name) {
-            default:
-                die($camelCase);
-
-                throw new ExceptionHandler(sprintf('Method "%s" does not exist in the deprecated library.', $name), 404);
-        }
-    }
-
     public function __call($name, $arguments)
     {
         $return = null;

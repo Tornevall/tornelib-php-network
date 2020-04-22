@@ -29,13 +29,13 @@ class MODULE_NETWORK
      */
     public function __call($name, $arguments)
     {
-        return call_user_func_array(array($this->NETWORK, $name), $arguments);
+        return call_user_func_array([$this->NETWORK, $name], $arguments);
     }
 
     /**
      * @param $name
-     * @since 6.1.0
      * @return void|null
+     * @since 6.1.0
      */
     public function __get($name)
     {
