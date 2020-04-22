@@ -273,4 +273,38 @@ class genericTest extends TestCase
             (new MODULE_NETWORK())->getArpaFromIpv4('127.0.0.1') === '1.0.0.127'
         );
     }
+
+    /**
+     * @test
+     */
+    public function arpaRequest4()
+    {
+        static::assertTrue(
+            (new Network())->getArpa('212.63.208.1') === '1.208.63.212'
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function arpaRequest6()
+    {
+        static::assertTrue(
+            (new Network())->getArpa('2a01:299:a0:ff:ff:ff:ff:ff') ===
+            'f.f.0.0.f.f.0.0.f.f.0.0.f.f.0.0.f.f.0.0.0.a.0.0.9.9.2.0.1.0.a.2'
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function ipType() {
+        $t4 = Statics::getIpType('127.0.0.1');
+        $t6 = Statics::getIpType('::ff');
+        
+        static::assertTrue(
+            $t4 === 4 &&
+            $t6 === 6
+        );
+    }
 }

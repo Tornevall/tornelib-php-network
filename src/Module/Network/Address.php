@@ -2,6 +2,9 @@
 
 namespace TorneLIB\Module\Network;
 
+use TorneLIB\Exception\Constants;
+use TorneLIB\Exception\ExceptionHandler;
+
 /**
  * Class Address IP- and arpas.
  *
@@ -113,5 +116,78 @@ class Address
                 )
             )
         );
+    }
+
+    /**
+     * @param $ipAddress
+     * @return bool
+     */
+    private function isIpv6($ipAddress)
+    {
+        return filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6);
+    }
+
+    private function isIpv4($ipAddress)
+    {
+        return filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
+    }
+
+    /**
+     * @param $ipAddress
+     * @param bool $returnIpType
+     * @return int|string
+     * @throws ExceptionHandler
+     * @since 5.0.0
+     */
+    public function getArpaFromAddr($ipAddress, $returnIpType = false)
+    {
+        $return = '0';
+        if ($this->isIpv6($ipAddress)) {
+            if ($returnIpType) {
+                $return = 6;
+            } else {
+                $return = $this->getArpaFromIpv6($ipAddress);
+            }
+        } elseif ($this->isIpv4($ipAddress)) {
+            if ($returnIpType) {
+                $return = 4;
+            } else {
+                $return = $this->getArpaFromIpv4($ipAddress);
+            }
+        } else {
+            throw new ExceptionHandler(
+                sprintf(
+                    'Invalid ip address "%s" in request %s.',
+                    $ipAddress,
+                    __FUNCTION__
+                ),
+                Constants::LIB_NETCURL_INVALID_IP_ADDRESS
+            );
+        }
+
+        return $return;
+    }
+
+    /**
+     * @param $ipAddress
+     * @return int
+     * @throws ExceptionHandler
+     * @since 6.1.0
+     */
+    public function getArpa($ipAddress) {
+        return $this->getArpaFromAddr($ipAddress);
+    }
+
+    /**
+     * Get type of ip address. Returns 0 if no type. IP Protocols from netcurl is deprecated.
+     *
+     * @param $ipAddress
+     * @return int
+     * @throws ExceptionHandler
+     * @since 6.1.0
+     */
+    public function getIpType($ipAddress)
+    {
+        return $this->getArpaFromAddr($ipAddress, true);
     }
 }
