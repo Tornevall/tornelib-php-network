@@ -45,7 +45,7 @@ class Address
      */
     public function isIpInRange($IP, $CIDR)
     {
-        [$net, $mask] = explode("/", $CIDR);
+        list($net, $mask) = explode("/", $CIDR);
         $ip_net = ip2long($net);
         $ip_mask = ~((1 << (32 - $mask)) - 1);
         $ip_ip = ip2long($IP);
@@ -174,7 +174,8 @@ class Address
      * @throws ExceptionHandler
      * @since 6.1.0
      */
-    public function getArpa($ipAddress) {
+    public function getArpa($ipAddress)
+    {
         return $this->getArpaFromAddr($ipAddress);
     }
 

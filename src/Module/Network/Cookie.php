@@ -121,7 +121,7 @@ class Cookie
     /**
      * @return string
      */
-    public function getCookieDefaultDomain(): string
+    public function getCookieDefaultDomain()
     {
         return $this->cookieDefaultDomain;
     }
