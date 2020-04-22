@@ -31,6 +31,7 @@ use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Helpers\NetUtil;
 use TorneLIB\IO\Data\Strings;
 use TorneLIB\Module\Network\Address;
+use TorneLIB\Module\Network\Cookie;
 use TorneLIB\Module\Network\Domain;
 use TorneLIB\Module\Network\Proxy;
 use TorneLIB\Module\Network\Statics;
@@ -58,6 +59,7 @@ class Network
         'TorneLIB\Module\Network\Proxy',
         'TorneLIB\Module\Network\Domain',
         'TorneLIB\Module\Network\Address',
+        'TorneLIB\Module\Network\Cookie',
     ];
 
     /**
@@ -77,6 +79,11 @@ class Network
     public $DOMAIN;
 
     /**
+     * @var $COOKIE Cookie
+     */
+    private $COOKIE;
+
+    /**
      * MODULE_NETWORK constructor.
      *
      * @since 6.1.0
@@ -87,6 +94,7 @@ class Network
         $this->PROXY = new Proxy();
         $this->ADDRESS = new Address();
         $this->DOMAIN = new Domain();
+        $this->COOKIE = new Cookie();
     }
 
     /**
