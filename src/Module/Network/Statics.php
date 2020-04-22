@@ -2,6 +2,8 @@
 
 namespace TorneLIB\Module\Network;
 
+use TorneLIB\Module\Network;
+
 /**
  * Class Statics Static requests without dependencies.
  *
@@ -44,5 +46,25 @@ abstract class Statics
         }
 
         return $return;
+    }
+
+    /**
+     * @param $redirecturl
+     * @since 6.1.0
+     */
+    public static function redirect($redirecturl = '', $replaceHeader = false, $responseCode = 301)
+    {
+        (new Domain())->redirect($redirecturl, $replaceHeader, $responseCode);
+    }
+
+    public static function __callStatic($name, $arguments)
+    {
+        return call_user_func_array(
+            [
+                new Network(),
+                $name
+            ],
+            $arguments
+        );
     }
 }

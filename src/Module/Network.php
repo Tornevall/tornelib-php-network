@@ -31,6 +31,7 @@ use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Helpers\NetUtil;
 use TorneLIB\IO\Data\Strings;
 use TorneLIB\Module\Network\Address;
+use TorneLIB\Module\Network\Domain;
 use TorneLIB\Module\Network\Proxy;
 use TorneLIB\Module\Network\Statics;
 
@@ -55,6 +56,7 @@ class Network
      */
     private $classMap = [
         'TorneLIB\Module\Network\Proxy',
+        'TorneLIB\Module\Network\Domain',
         'TorneLIB\Module\Network\Address',
     ];
 
@@ -70,6 +72,11 @@ class Network
     public $ADDRESS;
 
     /**
+     * @var $DOMAIN Domain
+     */
+    public $DOMAIN;
+
+    /**
      * MODULE_NETWORK constructor.
      *
      * @since 6.1.0
@@ -79,6 +86,7 @@ class Network
         $this->DEPRECATED = new DeprecateNet();
         $this->PROXY = new Proxy();
         $this->ADDRESS = new Address();
+        $this->DOMAIN = new Domain();
     }
 
     /**
@@ -172,8 +180,6 @@ class Network
         );
     }
 
-
-
     /*** Functions below has a key role in deprecation and compatibility ***/
 
     /**
@@ -214,17 +220,16 @@ class Network
                     return call_user_func_array([$instance, $name], $arguments);
                 }
             }
-
-            throw new ExceptionHandler(
-                sprintf(
-                    '%sException: No method with name %s found %s.',
-                    __FUNCTION__,
-                    $name,
-                    __CLASS__
-                ),
-                Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
-            );
         }
+        throw new ExceptionHandler(
+            sprintf(
+                '%sException: No method with name %s found %s.',
+                __FUNCTION__,
+                $name,
+                __CLASS__
+            ),
+            Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
+        );
     }
 
     /**
@@ -286,10 +291,12 @@ class Network
     public function __call($name, $arguments)
     {
         $return = null;
+        $throwThis = null;
 
         try {
             $return = $this->getStaticResponse($name, $arguments);
         } catch (ExceptionHandler $e) {
+            $throwThis = $e;
         }
 
         try {
@@ -301,6 +308,7 @@ class Network
             try {
                 $return = $this->get($name);
             } catch (ExceptionHandler $e) {
+                $throwThis = $e;
             }
         }
 
@@ -308,17 +316,19 @@ class Network
             try {
                 $return = $this->getByClassMap($name, $arguments);
             } catch (ExceptionHandler $e) {
+                $throwThis = $e;
             }
         }
 
-        if (is_null($return)) {
+        if (is_null($return) && !is_null($throwThis)) {
             throw new ExceptionHandler(
                 sprintf(
                     'Method "%s" for %s does not exist or has been deprecated',
                     $name,
                     __CLASS__
                 ),
-                Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
+                Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE,
+                $throwThis
             );
         }
 
