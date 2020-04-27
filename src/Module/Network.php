@@ -5,7 +5,7 @@ namespace TorneLIB\Module;
 use Exception;
 use TorneLIB\Exception\Constants;
 use TorneLIB\Exception\ExceptionHandler;
-use TorneLIB\Helpers\NetUtil;
+use TorneLIB\Helpers\NetUtils;
 use TorneLIB\IO\Data\Strings;
 use TorneLIB\Module\Network\Address;
 use TorneLIB\Module\Network\Cookie;
@@ -13,13 +13,10 @@ use TorneLIB\Module\Network\Domain;
 use TorneLIB\Module\Network\Proxy;
 use TorneLIB\Module\Network\Statics;
 
-if (!defined('NETCURL_NETWORK_RELEASE')) {
-    define('NETCURL_NETWORK_RELEASE', '6.1.0');
-}
-if (!defined('NETCURL_NETWORK_MODIFY')) {
-    define('NETCURL_NETWORK_MODIFY', '2019-11-28');
-}
-
+/**
+ * Class Network
+ * @package TorneLIB\Module
+ */
 class Network
 {
     /**
@@ -146,7 +143,7 @@ class Network
      */
     public function getGitTagsByUrl($url, $numericsOnly = false, $numericsSanitized = false)
     {
-        if (!class_exists('TorneLIB\Helpers\NetUtil')) {
+        if (!class_exists('TorneLIB\Helpers\NetUtils')) {
             throw new ExceptionHandler(
                 sprintf(
                     'Can not use %s since the function is missing in %s.',
@@ -158,7 +155,7 @@ class Network
         }
         return call_user_func_array(
             [
-                (new NetUtil()),
+                (new NetUtils()),
                 __FUNCTION__,
             ],
             [$url, $numericsOnly, $numericsSanitized]

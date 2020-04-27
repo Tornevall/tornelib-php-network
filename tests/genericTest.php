@@ -145,8 +145,8 @@ class genericTest extends TestCase
      */
     public function getGitTagsNetcurl()
     {
-        if (!class_exists('TorneLIB\Helpers\NetUtil')) {
-            static::markTestSkipped('TorneLIB\Helpers\NetUtil unavailable');
+        if (!class_exists('TorneLIB\Helpers\NetUtils')) {
+            static::markTestSkipped('TorneLIB\Helpers\NetUtils unavailable');
             return;
         }
 
@@ -161,13 +161,13 @@ class genericTest extends TestCase
      */
     public function getGitTagsNetcurlBucket()
     {
-        if (!class_exists('TorneLIB\Helpers\NetUtil')) {
-            static::markTestSkipped('TorneLIB\Helpers\NetUtil unavailable');
+        if (!class_exists('TorneLIB\Helpers\NetUtils')) {
+            static::markTestSkipped('TorneLIB\Helpers\NetUtils unavailable');
             return;
         }
         static::assertGreaterThan(
             2,
-            (new TorneLIB\Helpers\NetUtil())->getGitTagsByUrl("https://bitbucket.org/resursbankplugins/resurs-ecomphp/src/master/")
+            (new TorneLIB\Helpers\NetUtils())->getGitTagsByUrl("https://bitbucket.org/resursbankplugins/resurs-ecomphp/src/master/")
         );
     }
 
@@ -177,8 +177,8 @@ class genericTest extends TestCase
      */
     public function getGitOldUtil()
     {
-        if (!class_exists('TorneLIB\Helpers\NetUtil')) {
-            static::markTestSkipped('TorneLIB\Helpers\NetUtil unavailable');
+        if (!class_exists('TorneLIB\Helpers\NetUtils')) {
+            static::markTestSkipped('TorneLIB\Helpers\NetUtils unavailable');
             return;
         }
 
