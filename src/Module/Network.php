@@ -5,7 +5,6 @@ namespace TorneLIB\Module;
 use Exception;
 use TorneLIB\Exception\Constants;
 use TorneLIB\Exception\ExceptionHandler;
-use TorneLIB\Helpers\NetUtils;
 use TorneLIB\IO\Data\Strings;
 use TorneLIB\Module\Network\Address;
 use TorneLIB\Module\Network\Cookie;
@@ -126,40 +125,6 @@ class Network
     public function getIsHttps()
     {
         return (bool)Statics::getCurrentServerProtocol();
-    }
-
-    /**
-     * getGitTagsByUrl
-     *
-     * From 6.1, the $keepCredentials has no effect.
-     *
-     * @param $url
-     * @param bool $numericsOnly
-     * @param bool $numericsSanitized
-     * @return array
-     * @throws ExceptionHandler
-     * @since 6.0.4
-     * @deprecated Method moved to netcurl-6.1, use that directly instead of this old reference pointer.
-     */
-    public function getGitTagsByUrl($url, $numericsOnly = false, $numericsSanitized = false)
-    {
-        if (!class_exists('TorneLIB\Helpers\NetUtils')) {
-            throw new ExceptionHandler(
-                sprintf(
-                    'Can not use %s since the function is missing in %s.',
-                    __FUNCTION__,
-                    __CLASS__
-                ),
-                Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
-            );
-        }
-        return call_user_func_array(
-            [
-                (new NetUtils()),
-                __FUNCTION__,
-            ],
-            [$url, $numericsOnly, $numericsSanitized]
-        );
     }
 
     /*** Functions below has a key role in deprecation and compatibility ***/
