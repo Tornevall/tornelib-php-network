@@ -5,9 +5,8 @@ namespace TorneLIB\Module;
 use TorneLIB\Exception\Constants;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Helpers\NetUtils;
-use TorneLIB\Module\Network\Statics;
 use TorneLIB\IO\Data\Strings;
-use TorneLIB\Module\Bit;
+use TorneLIB\Module\Network\Statics;
 
 /**
  * Class DeprecateNet
@@ -30,6 +29,25 @@ class DeprecateNet
     public $BIT;
 
     /**
+     * @throws ExceptionHandler
+     * @since 6.1.2
+     */
+    private function getNetUtils()
+    {
+        if (!class_exists('TorneLIB\Helpers\NetUtils')) {
+            throw new ExceptionHandler(
+                sprintf(
+                    'Can not use %s since the function is missing in %s.',
+                    __FUNCTION__,
+                    __CLASS__
+                ),
+                Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
+            );
+        }
+        return new NetUtils();
+    }
+
+    /**
      * getGitTagsByUrl
      *
      * From 6.1, the $keepCredentials has no effect.
@@ -44,25 +62,30 @@ class DeprecateNet
      */
     public function getGitTagsByUrl($url, $numericsOnly = false, $numericsSanitized = false)
     {
-        if (!class_exists('TorneLIB\Helpers\NetUtils')) {
-            throw new ExceptionHandler(
-                sprintf(
-                    'Can not use %s since the function is missing in %s.',
-                    __FUNCTION__,
-                    __CLASS__
-                ),
-                Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
-            );
-        }
         return call_user_func_array(
             [
-                (new NetUtils()),
+                ($this->getNetUtils()),
                 __FUNCTION__,
             ],
             [$url, $numericsOnly, $numericsSanitized]
         );
     }
 
+    /**
+     * @return mixed
+     * @throws ExceptionHandler
+     * @since 6.1.2
+     */
+    public function versionTooOld($myVersion = '', $gitUrl = '')
+    {
+        return call_user_func_array(
+            [
+                ($this->getNetUtils()),
+                'getHigherVersions',
+            ],
+            [$gitUrl, $myVersion]
+        );
+    }
 
     public function __construct()
     {
@@ -76,7 +99,7 @@ class DeprecateNet
         $camelCaseMethodName = Strings::returnCamelCase($name);
 
         if (method_exists($this, $camelCaseMethodName)) {
-            $return = call_user_func_array(array($this, $camelCaseMethodName), $arguments);
+            $return = call_user_func_array([$this, $camelCaseMethodName], $arguments);
         }
 
         return $return;
