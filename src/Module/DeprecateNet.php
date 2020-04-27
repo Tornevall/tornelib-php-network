@@ -76,7 +76,7 @@ class DeprecateNet
      * @throws ExceptionHandler
      * @since 6.1.2
      */
-    public function versionTooOld($myVersion = '', $gitUrl = '')
+    public function getVersionTooOld($myVersion = '', $gitUrl = '')
     {
         return call_user_func_array(
             [
