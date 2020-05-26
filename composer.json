@@ -1,7 +1,7 @@
 {
     "name": "tornevall/tornelib-php-network",
     "description": "Network related utility/library that handles network related information thas is not pure communication.",
-    "version": "6.1.3",
+    "version": "6.1.4",
     "license": "Apache-2.0",
     "require": {
         "tornevall/tornelib-php-errorhandler": "^6.1",
