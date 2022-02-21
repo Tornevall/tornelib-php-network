@@ -6,8 +6,6 @@ use PHPUnit\Framework\TestCase;
 use TorneLIB\Exception\Constants;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\IO\Data\Strings;
-use TorneLIB\Module\Exception\AddressException;
-use TorneLIB\Module\Exception\DomainException;
 use TorneLIB\Module\Network;
 use TorneLIB\Module\Network\Address;
 use TorneLIB\Module\Network\Domain;
@@ -210,7 +208,7 @@ class genericTest extends TestCase
      */
     public function getUrlDomainException()
     {
-        static::expectException(DomainException::class);
+        static::expectException('TorneLIB\Module\Exception\DomainException');
 
         (new Domain())->getUrlDomain(
             'ftp:\nope.XXXXX',
@@ -362,7 +360,7 @@ class genericTest extends TestCase
      */
     public function getIpv6FromOctetsCatchException()
     {
-        static::expectException(AddressException::class);
+        static::expectException('TorneLIB\Module\Exception\AddressException');
         (new Address())->getIpv6FromOctets('0.0.1');
     }
 }
