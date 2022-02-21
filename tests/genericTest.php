@@ -6,6 +6,8 @@ use PHPUnit\Framework\TestCase;
 use TorneLIB\Exception\Constants;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\IO\Data\Strings;
+use TorneLIB\Module\Exception\AddressException;
+use TorneLIB\Module\Exception\DomainException;
 use TorneLIB\Module\Network;
 use TorneLIB\Module\Network\Address;
 use TorneLIB\Module\Network\Domain;
@@ -204,6 +206,20 @@ class genericTest extends TestCase
 
     /**
      * @test
+     * @throws ExceptionHandler
+     */
+    public function getUrlDomainException()
+    {
+        static::expectException(DomainException::class);
+
+        (new Domain())->getUrlDomain(
+            'ftp:\nope.XXXXX',
+            true
+        );
+    }
+
+    /**
+     * @test
      */
     public function getUrlsFromHtml()
     {
@@ -322,8 +338,9 @@ class genericTest extends TestCase
     /**
      * @test
      */
-    public function arpa() {
-        static::assertTrue (
+    public function arpa()
+    {
+        static::assertTrue(
             (new Address())->getArpa('127.0.0.1') === '1.0.0.127'
         );
     }
@@ -331,11 +348,21 @@ class genericTest extends TestCase
     /**
      * @test
      */
-    public function domain() {
+    public function domain()
+    {
         $domainCheck = (new Domain())->getUrlDomain('https://www.aftonbladet.se');
         static::assertTrue(
             $domainCheck[0] === 'www.aftonbladet.se' &&
             $domainCheck[1] === 'https'
         );
+    }
+
+    /**
+     * @test
+     */
+    public function getIpv6FromOctetsCatchException()
+    {
+        static::expectException(AddressException::class);
+        (new Address())->getIpv6FromOctets('0.0.1');
     }
 }

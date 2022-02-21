@@ -7,7 +7,6 @@ namespace TorneLIB\Module\Network;
  * @package TorneLIB\Module\Network
  * @version 6.1.0
  * @since 5.0.0
- * @deprecated Added since I don't know where it still might be used.
  */
 class Cookie
 {

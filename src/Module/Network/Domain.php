@@ -5,6 +5,7 @@ namespace TorneLIB\Module\Network;
 use Exception;
 use TorneLIB\Exception\Constants;
 use TorneLIB\Exception\ExceptionHandler;
+use TorneLIB\Module\Exception\DomainException;
 
 /**
  * Class Address Internet addressing handler.
@@ -15,19 +16,50 @@ use TorneLIB\Exception\ExceptionHandler;
 class Domain
 {
     /**
+     * @var
+     * @since 6.1.5
+     */
+    private $domainExceptionHandler;
+
+    /**
+     * @var
+     * @since 6.1.5
+     */
+    private $domainException;
+
+    /**
+     * @throws ExceptionHandler
+     */
+    private function getNetworkErrorHandler()
+    {
+        $this->domainExceptionHandler = set_error_handler(function ($errNo, $errStr) {
+            if (empty($this->stremWarningException['string'])) {
+                $this->domainException['code'] = $errNo;
+                $this->domainException['string'] = $errStr;
+            }
+            restore_error_handler();
+            throw new DomainException($errStr, $errNo);
+        }, E_WARNING);
+    }
+
+    /**
      * Validate if hostname in domain exists in DNS entries.
      *
      * @param string $urlParsedHost
      * @param string $urlParsed
      * @throws ExceptionHandler
+     * @noinspection PhpIllegalStringOffsetInspection
      */
     private function getUrlDomainValidatedHost(string $urlParsedHost, string $urlParsed)
     {
+        $this->getNetworkErrorHandler();
+
         // Make sure that the host is not invalid
-        if (filter_var($urlParsedHost, FILTER_VALIDATE_URL)) {
-            $hostRecord = @dns_get_record($urlParsed['host'], DNS_ANY);
+        if (isset($urlParsed['host']) && filter_var($urlParsedHost, FILTER_VALIDATE_URL)) {
+            $hostRecord = dns_get_record($urlParsed['host'], DNS_ANY);
+            restore_error_handler();
             if (!count($hostRecord)) {
-                throw new ExceptionHandler(
+                throw new DomainException(
                     sprintf(
                         'Host validation for "%s" in %s failed.',
                         $urlParsedHost,
@@ -36,6 +68,15 @@ class Domain
                     Constants::LIB_NETCURL_DOMAIN_OR_HOST_VALIDATION_FAILURE
                 );
             }
+        } else {
+            throw new DomainException(
+                sprintf(
+                    'Host validation for "%s" in %s failed.',
+                    $urlParsedHost,
+                    __FUNCTION__
+                ),
+                Constants::LIB_NETCURL_DOMAIN_OR_HOST_VALIDATION_FAILURE
+            );
         }
     }
 
@@ -177,7 +218,11 @@ class Domain
         if (!empty($currentHost) && preg_match("/\./", $currentHost)) {
             $thisDomainArray = explode(".", $currentHost);
             if (is_array($thisDomainArray)) {
-                $return = $thisDomainArray[count($thisDomainArray) - 2] . "." . $thisDomainArray[count($thisDomainArray) - 1];
+                $return = sprintf(
+                    '%s.%s',
+                    $thisDomainArray[count($thisDomainArray) - 2],
+                    $thisDomainArray[count($thisDomainArray) - 1]
+                );
             }
         }
 

@@ -24,7 +24,7 @@ class Proxy
         'FORWARDED',
         'CLIENT_IP',
         'FORWARDED_FOR_IP',
-        'HTTP_PROXY_CONNECTION'
+        'HTTP_PROXY_CONNECTION',
     ];
 
     /**
@@ -76,7 +76,7 @@ class Proxy
      */
     public function getProxyData(bool $withValues = true): array
     {
-        $return = array();
+        $return = [];
         foreach ($this->proxyAddressList as $key => $value) {
             if (($withValues && !empty($value)) || !$withValues) {
                 $return[$key] = $value;

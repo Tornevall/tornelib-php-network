@@ -2,6 +2,7 @@
 
 namespace TorneLIB\Module;
 
-abstract class Ip {
+abstract class Ip
+{
 
 }

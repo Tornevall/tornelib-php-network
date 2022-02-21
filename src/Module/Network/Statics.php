@@ -64,7 +64,7 @@ abstract class Statics
         return call_user_func_array(
             [
                 new Network(),
-                $name
+                $name,
             ],
             $arguments
         );

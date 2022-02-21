@@ -156,7 +156,7 @@ class Network
      */
     public function redirect(string $redirectToUrl = '', bool $replaceHeader = false, int $responseCode = 301)
     {
-        return (new Domain())->redirect($redirectToUrl, $replaceHeader, $responseCode);
+        (new Domain())->redirect($redirectToUrl, $replaceHeader, $responseCode);
     }
 
     /**
@@ -242,6 +242,7 @@ class Network
      * @param $arguments
      * @return mixed
      * @throws ExceptionHandler
+     * @throws Exception
      * @since 6.1.0
      */
     public function __call($name, $arguments)

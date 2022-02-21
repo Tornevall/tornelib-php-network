@@ -116,6 +116,7 @@ class DeprecateNet
      *
      * @param string $data
      * @return string
+     * @noinspection PhpUnusedPrivateMethodInspection
      */
     private function base64urlEncode(string $data): string
     {
@@ -127,6 +128,7 @@ class DeprecateNet
      *
      * @param string $data
      * @return string
+     * @noinspection PhpUnusedPrivateMethodInspection
      */
     private function base64urlDecode(string $data): string
     {
