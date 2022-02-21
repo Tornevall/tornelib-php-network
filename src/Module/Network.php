@@ -15,6 +15,7 @@ use TorneLIB\Module\Network\Statics;
 /**
  * Class Network
  * @package TorneLIB\Module
+ * @version 6.1.5
  */
 class Network
 {

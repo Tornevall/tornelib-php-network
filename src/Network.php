@@ -9,7 +9,7 @@ use TorneLIB\Module\Network;
 /**
  * Class MODULE_NETWORK
  * @package TorneLIB
- * @version 6.1.4
+ * @version 6.1.5
  */
 class MODULE_NETWORK
 {

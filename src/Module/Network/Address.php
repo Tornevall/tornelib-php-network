@@ -10,7 +10,7 @@ use TorneLIB\Module\Exception\AddressException;
  * Class Address IP- and arpas.
  *
  * @package TorneLIB\Module\Network
- * @version 6.1.0
+ * @version 6.1.5
  */
 class Address
 {

@@ -5,7 +5,7 @@ namespace TorneLIB\Module\Network;
 /**
  * Class Cookie
  * @package TorneLIB\Module\Network
- * @version 6.1.0
+ * @version 6.1.5
  * @since 5.0.0
  */
 class Cookie

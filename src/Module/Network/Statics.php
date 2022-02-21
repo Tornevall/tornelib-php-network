@@ -8,6 +8,7 @@ use TorneLIB\Module\Network;
  * Class Statics Static requests without dependencies.
  *
  * @package TorneLIB\Module\Network
+ * @version 6.1.5
  */
 abstract class Statics
 {

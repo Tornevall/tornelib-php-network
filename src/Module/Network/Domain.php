@@ -11,7 +11,7 @@ use TorneLIB\Module\Exception\DomainException;
  * Class Address Internet addressing handler.
  *
  * @package TorneLIB\Module\Network
- * @version 6.1.0
+ * @version 6.1.5
  */
 class Domain
 {

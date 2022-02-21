@@ -12,6 +12,7 @@ use TorneLIB\Module\Network\Statics;
  * Class DeprecateNet
  * Network Module Deprecation Class.
  * @package TorneLIB\Module
+ * @version 6.1.5
  */
 class DeprecateNet
 {
