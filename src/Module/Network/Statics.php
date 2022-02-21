@@ -13,13 +13,13 @@ abstract class Statics
 {
     /**
      * Return information about currently used server protocol (HTTP or HTTPS).
-     * If returnprotocol is false, returned result will be true for https.
+     * If returnProtocol is false, returned result will be true for https.
      *
      * @param bool $returnProtocol
      * @return bool|string
      * @since 6.0.15
      */
-    public static function getCurrentServerProtocol($returnProtocol = false)
+    public static function getCurrentServerProtocol(bool $returnProtocol = false)
     {
         if (isset($_SERVER['HTTPS'])) {
             if ($_SERVER['HTTPS'] == "on") {
@@ -49,12 +49,14 @@ abstract class Statics
     }
 
     /**
-     * @param $redirecturl
+     * @param string $redirectUrl
+     * @param bool $replaceHeader
+     * @param int $responseCode
      * @since 6.1.0
      */
-    public static function redirect($redirecturl = '', $replaceHeader = false, $responseCode = 301)
+    public static function redirect(string $redirectUrl, bool $replaceHeader = false, int $responseCode = 301)
     {
-        (new Domain())->redirect($redirecturl, $replaceHeader, $responseCode);
+        (new Domain())->redirect($redirectUrl, $replaceHeader, $responseCode);
     }
 
     public static function __callStatic($name, $arguments)
@@ -62,7 +64,7 @@ abstract class Statics
         return call_user_func_array(
             [
                 new Network(),
-                $name
+                $name,
             ],
             $arguments
         );

@@ -1,5 +1,7 @@
 <?php
 
+/** @noinspection PhpCSValidationInspection */
+
 namespace TorneLIB;
 
 use TorneLIB\Module\Network;

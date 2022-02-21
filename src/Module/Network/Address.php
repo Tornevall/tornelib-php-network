@@ -4,6 +4,7 @@ namespace TorneLIB\Module\Network;
 
 use TorneLIB\Exception\Constants;
 use TorneLIB\Exception\ExceptionHandler;
+use TorneLIB\Module\Exception\AddressException;
 
 /**
  * Class Address IP- and arpas.
@@ -13,20 +14,47 @@ use TorneLIB\Exception\ExceptionHandler;
  */
 class Address
 {
+    /**
+     * @var array
+     * @since 6.1.5
+     */
+    private $addressException;
+
+    /**
+     * @var array
+     * @since 6.1.5
+     */
+    private $addressExceptionHandler;
 
     /**
      * Get IP range from netmask.
      *
-     * @param null $mask
+     * @param string $mask
      * @return array
+     * @throws ExceptionHandler
      * @since 5.0.0
      */
-    public function getRangeFromMask($mask = null)
+    public function getRangeFromMask(string $mask): array
     {
         $addresses = [];
-        @list($ip, $len) = explode('/', $mask);
-        if (($min = ip2long($ip)) !== false) {
-            $max = ($min | (1 << (32 - $len)) - 1);
+        $cidrLength = 0;
+        $ip = '';
+        if (!preg_match('/\//', $mask)) {
+            throw new ExceptionHandler(
+                'Not a proper CIDR range.',
+                Constants::LIB_NETWORK_BAD_CIDR_STRING
+            );
+        }
+        // Preferred method for higher PHP's shown below. We used list() before.
+        //[$ip, $len] = explode('/', $mask);
+        $explodeCidr = explode('/', $mask);
+        if (isset($explodeCidr[1])) {
+            $ip = $explodeCidr[0];
+            $cidrLength = $explodeCidr[1];
+        }
+        $min = ip2long($ip);
+        if ($min !== false) {
+            $max = ($min | (1 << (32 - $cidrLength)) - 1);
             for ($i = $min; $i < $max; $i++) {
                 $addresses[] = long2ip($i);
             }
@@ -38,36 +66,51 @@ class Address
     /**
      * Test if the given ip address is in the netmask range (not ipv6 compatible yet)
      *
-     * @param $IP
-     * @param $CIDR
+     * @param string $IP
+     * @param string $CIDR
      * @return bool
+     * @throws ExceptionHandler
      * @since 5.0.0
      */
-    public function isIpInRange($IP, $CIDR)
+    public function isIpInRange(string $IP, string $CIDR): bool
     {
-        list($net, $mask) = explode("/", $CIDR);
-        $ip_net = ip2long($net);
-        $ip_mask = ~((1 << (32 - $mask)) - 1);
-        $ip_ip = ip2long($IP);
-        $ip_ip_net = $ip_ip & $ip_mask;
+        $explodeCidr = explode('/', $CIDR);
+        if (isset($explodeCidr[1])) {
+            $net = $explodeCidr[0];
+            $mask = $explodeCidr[1];
 
-        return ($ip_ip_net == $ip_net);
+            $ip_net = ip2long($net);
+            $ip_mask = ~((1 << (32 - $mask)) - 1);
+            $ip_ip = ip2long($IP);
+            $ip_ip_net = $ip_ip & $ip_mask;
+
+            return ($ip_ip_net == $ip_net);
+        }
+
+        throw new AddressException(
+            'Not a proper CIDR range.',
+            Constants::LIB_NETWORK_BAD_CIDR_STRING
+        );
     }
 
     /**
      * Translate ipv6 address to reverse octets
      *
-     * @param string $ipAddr
+     * @param string $ipAddress
      * @return string
+     * @throws ExceptionHandler
      * @since 5.0.0
      */
-    public function getArpaFromIpv6($ipAddr = '::')
+    public function getArpaFromIpv6(string $ipAddress): string
     {
-        if (filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false) {
-            return null;
+        if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false) {
+            return '';
         }
-        $unpackedAddr = @unpack('H*hex', inet_pton($ipAddr));
-        $hex = $unpackedAddr['hex'];
+
+        $this->getNetworkErrorHandler();
+        $unpackedAddress = unpack('H*hex', inet_pton($ipAddress));
+        $hex = $unpackedAddress['hex'];
+        restore_error_handler();
 
         return implode('.', array_reverse(str_split($hex)));
     }
@@ -75,17 +118,38 @@ class Address
     /**
      * Translate ipv4 address to reverse octets
      *
-     * @param string $ipAddr
+     * @param string $ipAddress
      * @return string
+     * @throws ExceptionHandler
      * @since 5.0.0
      */
-    public function getArpaFromIpv4($ipAddr = '127.0.0.1')
+    public function getArpaFromIpv4(string $ipAddress): string
     {
-        if (filter_var($ipAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
-            return implode(".", array_reverse(explode(".", $ipAddr)));
+        if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+            $return = implode(".", array_reverse(explode(".", $ipAddress)));
+        } else {
+            throw new ExceptionHandler(
+                'Not a valid IPv4 address.',
+                Constants::LIB_NETWORK_INVALID_IPV4
+            );
         }
 
-        return null;
+        return $return;
+    }
+
+    /**
+     * @throws ExceptionHandler
+     */
+    private function getNetworkErrorHandler()
+    {
+        $this->addressExceptionHandler = set_error_handler(function ($errNo, $errStr) {
+            if (empty($this->stremWarningException['string'])) {
+                $this->addressException['code'] = $errNo;
+                $this->addressException['string'] = $errStr;
+            }
+            restore_error_handler();
+            throw new AddressException($errStr, $errNo);
+        }, E_WARNING);
     }
 
     /**
@@ -93,12 +157,15 @@ class Address
      *
      * @param string $arpaOctets
      * @return string
+     * @throws ExceptionHandler
      * @since 5.0.0
      */
     public function getIpv6FromOctets(
-        $arpaOctets = '0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0'
-    ) {
-        return @inet_ntop(
+        string $arpaOctets = '0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0'
+    ): string {
+        $this->getNetworkErrorHandler();
+
+        $return = inet_ntop(
             pack(
                 'H*',
                 implode(
@@ -116,32 +183,51 @@ class Address
                 )
             )
         );
+
+        restore_error_handler();
+
+        return $return;
     }
 
     /**
-     * @param $ipAddress
+     * @param string $ipAddress
      * @return bool
+     * @since 6.1.0
      */
-    private function isIpv6($ipAddress)
+    private function isIpv6(string $ipAddress): bool
     {
         return filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6);
     }
 
-    private function isIpv4($ipAddress)
+    /**
+     * @param string $ipAddress
+     * @return bool
+     * @since 6.1.0
+     */
+    private function isIpv4(string $ipAddress): bool
     {
         return filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
     }
 
     /**
-     * @param $ipAddress
+     * @param string $ipAddress
+     * @return bool
+     * @since 6.1.5
+     */
+    public function isValidIpAddress(string $ipAddress): bool
+    {
+        return $this->isIpv4($ipAddress) || $this->isIpv6($ipAddress);
+    }
+
+    /**
+     * @param string $ipAddress
      * @param bool $returnIpType
      * @return int|string
      * @throws ExceptionHandler
      * @since 5.0.0
      */
-    public function getArpaFromAddr($ipAddress, $returnIpType = false)
+    public function getArpaFromAddr(string $ipAddress, $returnIpType = false)
     {
-        $return = '0';
         if ($this->isIpv6($ipAddress)) {
             if ($returnIpType) {
                 $return = 6;
@@ -170,11 +256,11 @@ class Address
 
     /**
      * @param $ipAddress
-     * @return int
+     * @return string
      * @throws ExceptionHandler
      * @since 6.1.0
      */
-    public function getArpa($ipAddress)
+    public function getArpa($ipAddress): string
     {
         return $this->getArpaFromAddr($ipAddress);
     }
@@ -187,7 +273,7 @@ class Address
      * @throws ExceptionHandler
      * @since 6.1.0
      */
-    public function getIpType($ipAddress)
+    public function getIpType($ipAddress): int
     {
         return $this->getArpaFromAddr($ipAddress, true);
     }
