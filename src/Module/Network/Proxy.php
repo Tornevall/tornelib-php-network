@@ -9,7 +9,7 @@ class Proxy
      *
      * @since 6.0
      */
-    private $proxyHeaders = array(
+    private $proxyHeaders = [
         'HTTP_VIA',
         'HTTP_X_FORWARDED_FOR',
         'HTTP_FORWARDED_FOR',
@@ -24,15 +24,15 @@ class Proxy
         'FORWARDED',
         'CLIENT_IP',
         'FORWARDED_FOR_IP',
-        'HTTP_PROXY_CONNECTION'
-    );
+        'HTTP_PROXY_CONNECTION',
+    ];
 
     /**
      * @var array $proxyAddressList Address list with catched proxy addresses if published by client.
      *
      * @since 6.1.0
      */
-    private $proxyAddressList = array();
+    private $proxyAddressList = [];
 
     /**
      * Address constructor.
@@ -49,7 +49,7 @@ class Proxy
      * @return array
      * @since 6.1.0
      */
-    private function fetchProxyHeaders()
+    private function fetchProxyHeaders(): array
     {
         if (isset($_SERVER) && is_array($_SERVER)) {
             foreach ($this->proxyHeaders as $headerKey) {
@@ -64,7 +64,7 @@ class Proxy
      * @return array
      * @snice 6.1.0
      */
-    public function getProxyHeaders()
+    public function getProxyHeaders(): array
     {
         return $this->proxyHeaders;
     }
@@ -74,9 +74,9 @@ class Proxy
      * @return array
      * @since 6.1.0
      */
-    public function getProxyData($withValues = true)
+    public function getProxyData(bool $withValues = true): array
     {
-        $return = array();
+        $return = [];
         foreach ($this->proxyAddressList as $key => $value) {
             if (($withValues && !empty($value)) || !$withValues) {
                 $return[$key] = $value;
