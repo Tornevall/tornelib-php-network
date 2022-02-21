@@ -2,6 +2,7 @@
 
 namespace TorneLIB\Module\Network;
 
+use Exception;
 use TorneLIB\Exception\Constants;
 use TorneLIB\Exception\ExceptionHandler;
 
@@ -16,11 +17,11 @@ class Domain
     /**
      * Validate if hostname in domain exists in DNS entries.
      *
-     * @param $urlParsedHost
-     * @param $urlParsed
+     * @param string $urlParsedHost
+     * @param string $urlParsed
      * @throws ExceptionHandler
      */
-    private function getUrlDomainValidatedHost($urlParsedHost, $urlParsed)
+    private function getUrlDomainValidatedHost(string $urlParsedHost, string $urlParsed)
     {
         // Make sure that the host is not invalid
         if (filter_var($urlParsedHost, FILTER_VALIDATE_URL)) {
@@ -111,7 +112,7 @@ class Domain
      * @return array
      * @throws ExceptionHandler
      */
-    public function getUrlDomain($requestedUrlHost = '', $validateHost = false)
+    public function getUrlDomain($requestedUrlHost = '', $validateHost = false): array
     {
         // If the scheme is forgotten, add it to keep normal hosts validatable too.
         if (!preg_match("/\:\/\//", $requestedUrlHost)) {
@@ -133,7 +134,7 @@ class Domain
     }
 
     /**
-     * @param $stringWithUrls
+     * @param string $stringWithUrls
      * @param int $offset
      * @param int $urlLimit
      * @param array $protocols
@@ -141,11 +142,11 @@ class Domain
      * @since 5.0.0
      */
     public function getUrlsFromHtml(
-        $stringWithUrls,
-        $offset = -1,
-        $urlLimit = -1,
-        $protocols = ['http']
-    ) {
+        string $stringWithUrls,
+        int $offset = -1,
+        int $urlLimit = -1,
+        array $protocols = ['http']
+    ): array {
         $urlList = $this->getUrlsByProtocol($stringWithUrls, $protocols);
 
         return $this->getUrlsByOffset($urlList, $offset, $urlLimit);
@@ -156,10 +157,10 @@ class Domain
      *
      * @param string $hostname Alternative hostname than the HTTP_HOST
      * @return string
-     * @throws \Exception
+     * @throws Exception
      * @since 5.0.0
      */
-    public function getDomainName($hostname)
+    public function getDomainName(string $hostname): string
     {
         $return = null;
         $currentHost = "";
@@ -183,7 +184,14 @@ class Domain
         return $return;
     }
 
-    public function redirect($redirectToUrl = '', $replaceHeader = false, $responseCode = 301)
+    /**
+     * Redirect helper.
+     * @param string $redirectToUrl
+     * @param bool $replaceHeader
+     * @param int $responseCode
+     * @since 5.0.0
+     */
+    public function redirect(string $redirectToUrl = '', bool $replaceHeader = false, int $responseCode = 301)
     {
         header("Location: $redirectToUrl", $replaceHeader, $responseCode);
         die();

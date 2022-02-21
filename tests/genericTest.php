@@ -7,6 +7,7 @@ use TorneLIB\Exception\Constants;
 use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\IO\Data\Strings;
 use TorneLIB\Module\Network;
+use TorneLIB\Module\Network\Address;
 use TorneLIB\Module\Network\Domain;
 use TorneLIB\Module\Network\Statics;
 use TorneLIB\MODULE_NETWORK;
@@ -298,13 +299,43 @@ class genericTest extends TestCase
     /**
      * @test
      */
-    public function ipType() {
+    public function ipType()
+    {
         $t4 = Statics::getIpType('127.0.0.1');
         $t6 = Statics::getIpType('::ff');
-        
+
         static::assertTrue(
             $t4 === 4 &&
             $t6 === 6
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function cidrMask()
+    {
+        $range = (new Address())->getRangeFromMask('127.0.0.240/28');
+        static::assertCount(15, $range);
+    }
+
+    /**
+     * @test
+     */
+    public function arpa() {
+        static::assertTrue (
+            (new Address())->getArpa('127.0.0.1') === '1.0.0.127'
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function domain() {
+        $domainCheck = (new Domain())->getUrlDomain('https://www.aftonbladet.se');
+        static::assertTrue(
+            $domainCheck[0] === 'www.aftonbladet.se' &&
+            $domainCheck[1] === 'https'
         );
     }
 }

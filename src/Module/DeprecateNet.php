@@ -22,10 +22,11 @@ class DeprecateNet
     public $isDeprecated = true;
 
     /**
+     * @return NetUtils
      * @throws ExceptionHandler
      * @since 6.1.2
      */
-    private function getNetUtils()
+    private function getNetUtils(): NetUtils
     {
         if (!class_exists('TorneLIB\Helpers\NetUtils')) {
             throw new ExceptionHandler(
@@ -45,7 +46,7 @@ class DeprecateNet
      *
      * From 6.1, the $keepCredentials has no effect.
      *
-     * @param $url
+     * @param string $url
      * @param bool $numericsOnly
      * @param bool $numericsSanitized
      * @return array
@@ -53,7 +54,7 @@ class DeprecateNet
      * @since 6.0.4
      * @deprecated Method moved to netcurl-6.1, use that directly instead of this old reference pointer.
      */
-    public function getGitTagsByUrl($url, $numericsOnly = false, $numericsSanitized = false)
+    public function getGitTagsByUrl(string $url, bool $numericsOnly = false, bool $numericsSanitized = false): array
     {
         return call_user_func_array(
             [
@@ -69,7 +70,7 @@ class DeprecateNet
      * @throws ExceptionHandler
      * @since 6.1.2
      */
-    public function getVersionTooOld($myVersion = '', $gitUrl = '')
+    public function getVersionTooOld(string $myVersion = '', string $gitUrl = '')
     {
         return call_user_func_array(
             [
@@ -80,6 +81,12 @@ class DeprecateNet
         );
     }
 
+    /**
+     * @param $name
+     * @param $arguments
+     * @return mixed|null
+     * @since 6.1.0
+     */
     public function __call($name, $arguments)
     {
         $return = null;
@@ -98,28 +105,30 @@ class DeprecateNet
      * @return bool|string
      * @since 6.1.0
      */
-    public function isSecureHttp($returnProtocol = false)
+    public function isSecureHttp(bool $returnProtocol = false)
     {
         return Statics::getCurrentServerProtocol($returnProtocol);
     }
 
 
     /**
-     * base64_encode
-     * @param $data
+     * base64_encode.
+     *
+     * @param string $data
      * @return string
      */
-    private function base64urlEncode($data)
+    private function base64urlEncode(string $data): string
     {
         return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 
     /**
-     * base64_decode
-     * @param $data
+     * base64_decode.
+     *
+     * @param string $data
      * @return string
      */
-    private function base64urlDecode($data)
+    private function base64urlDecode(string $data): string
     {
         return base64_decode(str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT));
     }

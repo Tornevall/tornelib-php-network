@@ -77,7 +77,7 @@ class Network
      * @return array
      * @since 6.1.0
      */
-    public function getProxyData($withValues = true)
+    public function getProxyData(bool $withValues = true): array
     {
         return $this->PROXY->getProxyData($withValues);
     }
@@ -87,7 +87,7 @@ class Network
      * @return mixed
      * @since 6.1.0
      */
-    public function getIsSecureHttp($returnProtocol = false)
+    public function getIsSecureHttp(bool $returnProtocol = false)
     {
         return Statics::getCurrentServerProtocol($returnProtocol);
     }
@@ -99,7 +99,7 @@ class Network
      * @return string
      * @sice 6.0.15
      */
-    public function getHttpHost()
+    public function getHttpHost(): string
     {
         $httpHost = (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : "");
         if (empty($httpHost)) {
@@ -122,7 +122,7 @@ class Network
      * @return bool
      * @since 6.1.0
      */
-    public function getIsHttps()
+    public function getIsHttps(): bool
     {
         return (bool)Statics::getCurrentServerProtocol();
     }
@@ -137,8 +137,6 @@ class Network
      */
     private function get($name)
     {
-        $return = null;
-
         $what = lcfirst(substr($name, 3));
         if (isset($this->{$what})) {
             return $this->{$what};
@@ -156,7 +154,7 @@ class Network
      * @param int $responseCode
      * @since 6.1.3
      */
-    public function redirect($redirectToUrl = '', $replaceHeader = false, $responseCode = 301)
+    public function redirect(string $redirectToUrl = '', bool $replaceHeader = false, int $responseCode = 301)
     {
         return (new Domain())->redirect($redirectToUrl, $replaceHeader, $responseCode);
     }
