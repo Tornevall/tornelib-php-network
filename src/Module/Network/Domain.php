@@ -21,6 +21,17 @@ class Domain
      * @param array|false $parsed
      * @throws DomainException
      */
+    /**
+     * Resolve DNS entries; override in deterministic tests or custom deployments.
+     *
+     * @param string $hostname
+     * @return array|false
+     */
+    protected function resolveDnsRecords(string $hostname)
+    {
+        return @dns_get_record($hostname, DNS_ANY);
+    }
+
     private function getUrlDomainValidatedHost(string $requestedUrl, $parsed)
     {
         if (!is_array($parsed) ||
@@ -34,7 +45,7 @@ class Domain
             );
         }
 
-        $records = @dns_get_record($parsed['host'], DNS_ANY);
+        $records = $this->resolveDnsRecords($parsed['host']);
         if (!is_array($records) || count($records) === 0) {
             throw new DomainException(
                 sprintf('Host validation for "%s" in %s failed.', $requestedUrl, __FUNCTION__),
