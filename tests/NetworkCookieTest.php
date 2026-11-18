@@ -47,6 +47,10 @@ class NetworkCookieTest extends TestCase
         self::assertTrue($cookie->isCookieUseSecure());
     }
 
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function testSettingCookieDoesNotDiscardExplicitPath()
     {
         $this->withServerValues(['HTTP_HOST' => 'example.test'], function () {
