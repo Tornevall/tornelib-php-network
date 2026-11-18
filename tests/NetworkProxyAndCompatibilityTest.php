@@ -86,6 +86,16 @@ class NetworkProxyAndCompatibilityTest extends TestCase
         (new Network())->unavailableNetworkMethod();
     }
 
+    public function testNullGetterResultIsNotTreatedAsMissingMethod()
+    {
+        $network = new Network();
+        $legacy = new MODULE_NETWORK();
+
+        self::assertNull($network->getCookieDefaultPrefix());
+        self::assertNull($network->getCookieDefaultDomain());
+        self::assertNull($legacy->getCookieDefaultPrefix());
+    }
+
     public function testCookieStateSurvivesDynamicFacadeCalls()
     {
         $network = new Network();
