@@ -23,6 +23,34 @@ class NetworkDomainTest extends TestCase
         );
     }
 
+    public function testSuccessfulHostValidationUsesDeterministicDnsFixture()
+    {
+        $domain = new class extends Domain {
+            protected function resolveDnsRecords(string $hostname)
+            {
+                return [['type' => 'A', 'host' => $hostname, 'ip' => '192.0.2.10']];
+            }
+        };
+
+        self::assertSame(
+            ['www.example.test', 'https', '/path'],
+            $domain->getUrlDomain('https://www.example.test/path', true)
+        );
+    }
+
+    public function testMissingDnsRecordsAreRejectedDeterministically()
+    {
+        $domain = new class extends Domain {
+            protected function resolveDnsRecords(string $hostname)
+            {
+                return [];
+            }
+        };
+
+        $this->expectException(DomainException::class);
+        $domain->getUrlDomain('https://www.example.test/path', true);
+    }
+
     public function testInvalidHostValidationThrowsLibraryExceptionWithoutDnsRequest()
     {
         $this->expectException(DomainException::class);
