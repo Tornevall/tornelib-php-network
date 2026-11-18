@@ -169,15 +169,21 @@ class Network
      */
     private function getByClassMap($name, $arguments)
     {
+        $instances = [
+            Proxy::class => $this->PROXY,
+            Domain::class => $this->DOMAIN,
+            Address::class => $this->ADDRESS,
+            Cookie::class => $this->COOKIE,
+        ];
+
         foreach ($this->classMap as $className) {
-            if (class_exists($className)) {
-                $methods = get_class_methods($className);
-                if (in_array($name, $methods)) {
-                    $instance = new $className();
-                    return call_user_func_array([$instance, $name], $arguments);
-                }
+            if (isset($instances[$className]) &&
+                in_array($name, get_class_methods($className), true)
+            ) {
+                return call_user_func_array([$instances[$className], $name], $arguments);
             }
         }
+
         throw new ExceptionHandler(
             sprintf(
                 '%sException: No method with name %s found %s.',
