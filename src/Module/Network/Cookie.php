@@ -3,50 +3,44 @@
 namespace TorneLIB\Module\Network;
 
 /**
- * Class Cookie
- * @package TorneLIB\Module\Network
+ * Cookie configuration and setting helpers.
+ *
  * @version 6.1.5
- * @since 5.0.0
  */
 class Cookie
 {
-    /**
-     * @var string
-     */
     private $cookieDefaultPath = '/';
-    /**
-     * @var string
-     */
     private $cookieDefaultDomain;
-
-    /**
-     * @var bool
-     */
     private $cookieUseSecure;
-
-    /**
-     * @var
-     */
     private $cookieDefaultPrefix;
 
     /**
-     * Set a cookie
+     * Set a cookie, preserving configured path/domain/secure parameters.
      *
      * @param string $name
      * @param string $value
-     * @param string $expire
+     * @param int|string $expire
      * @return bool
      */
     public function setCookie($name = '', $value = '', $expire = '')
     {
-        $this->setCookieParameters();
-        $defaultExpire = time() + 60 * 60 * 24 * 1;
-        if (empty($expire)) {
-            $expire = $defaultExpire;
-        } else {
-            if (is_string($expire)) {
-                $expire = strtotime($expire);
+        if ($this->cookieDefaultDomain === null || $this->cookieUseSecure === null) {
+            $this->setCookieParameters(
+                $this->cookieDefaultPath,
+                $this->cookieDefaultPrefix,
+                $this->cookieDefaultDomain,
+                $this->cookieUseSecure
+            );
+        }
+
+        if ($expire === '') {
+            $expire = time() + 86400;
+        } elseif (is_string($expire)) {
+            $parsed = ctype_digit($expire) ? (int)$expire : strtotime($expire);
+            if ($parsed === false) {
+                throw new \InvalidArgumentException('Invalid cookie expiration value.');
             }
+            $expire = $parsed;
         }
 
         return setcookie(
@@ -60,117 +54,93 @@ class Cookie
     }
 
     /**
-     * Prepare add-on parameters for setting a cookie.
+     * Set or refresh cookie defaults. A null domain preserves an existing one
+     * or derives a safe default from HTTP_HOST.
      *
      * @param string $path
-     * @param null $prefix
-     * @param null $domain
-     * @param null $secure
+     * @param string|null $prefix
+     * @param string|null $domain
+     * @param bool|null $secure
      * @return Cookie
      */
-    public function setCookieParameters($path = "/", $prefix = null, $domain = null, $secure = null)
+    public function setCookieParameters($path = '/', $prefix = null, $domain = null, $secure = null)
     {
         $this->cookieDefaultPath = $path;
-        if (empty($this->cookieDefaultDomain)) {
-            if (is_null($domain)) {
-                $this->cookieDefaultDomain = "." . $_SERVER['HTTP_HOST'];
+
+        if ($domain !== null) {
+            $this->cookieDefaultDomain = $domain;
+        } elseif ($this->cookieDefaultDomain === null) {
+            $httpHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+            $parsedHost = parse_url('http://' . $httpHost, PHP_URL_HOST);
+            $host = is_string($parsedHost) ? strtolower(rtrim($parsedHost, '.')) : '';
+
+            if (filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) !== false &&
+                filter_var(trim($host, '[]'), FILTER_VALIDATE_IP) === false &&
+                strpos($host, '.') !== false
+            ) {
+                $this->cookieDefaultDomain = '.' . $host;
             } else {
-                $this->cookieDefaultDomain = $domain;
+                // An empty Domain attribute produces a host-only cookie.
+                $this->cookieDefaultDomain = '';
             }
         }
-        if (is_null($secure)) {
-            if (isset($_SERVER['HTTPS'])) {
-                if ($_SERVER['HTTPS'] == "true") {
-                    $this->cookieUseSecure = true;
-                } else {
-                    $this->cookieUseSecure = false;
-                }
-            } else {
-                $this->cookieUseSecure = false;
+
+        if ($secure === null) {
+            if ($this->cookieUseSecure === null) {
+                $this->cookieUseSecure = Statics::getCurrentServerProtocol();
             }
         } else {
-            $this->cookieUseSecure = $secure;
+            $this->cookieUseSecure = (bool)$secure;
         }
-        if (!is_null($prefix)) {
+
+        if ($prefix !== null) {
             $this->cookieDefaultPrefix = $prefix;
         }
 
         return $this;
     }
 
-    /**
-     * @return string
-     */
     public function getCookieDefaultPath()
     {
         return $this->cookieDefaultPath;
     }
 
-    /**
-     * @param string $cookieDefaultPath
-     * @return $this
-     */
     public function setCookieDefaultPath($cookieDefaultPath)
     {
         $this->cookieDefaultPath = $cookieDefaultPath;
-
         return $this;
     }
 
-    /**
-     * @return string
-     */
     public function getCookieDefaultDomain()
     {
         return $this->cookieDefaultDomain;
     }
 
-    /**
-     * @param string $cookieDefaultDomain
-     * @return $this
-     */
     public function setCookieDefaultDomain($cookieDefaultDomain)
     {
         $this->cookieDefaultDomain = $cookieDefaultDomain;
-
         return $this;
     }
 
-    /**
-     * @return bool
-     */
     public function isCookieUseSecure()
     {
         return $this->cookieUseSecure;
     }
 
-    /**
-     * @param $cookieUseSecure
-     * @return $this
-     */
     public function setCookieUseSecure($cookieUseSecure)
     {
         $this->cookieUseSecure = $cookieUseSecure;
-
         return $this;
     }
 
-    /**
-     * @return mixed
-     */
     public function getCookieDefaultPrefix()
     {
         return $this->cookieDefaultPrefix;
     }
 
-    /**
-     * @param mixed $cookieDefaultPrefix
-     * @return $this
-     */
     public function setCookieDefaultPrefix($cookieDefaultPrefix)
     {
         $this->cookieDefaultPrefix = $cookieDefaultPrefix;
-
         return $this;
     }
 }
