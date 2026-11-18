@@ -11,7 +11,7 @@ class NetworkAddressTest extends TestCase
         return [
             ['127.0.0.1', 4, '1.0.0.127'],
             ['192.0.2.7', 4, '7.2.0.192'],
-            ['::1', 6, str_repeat('0.', 31) . '1'],
+            ['::1', 6, '1.' . str_repeat('0.', 30) . '0'],
         ];
     }
 
