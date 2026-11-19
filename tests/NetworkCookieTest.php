@@ -111,4 +111,73 @@ class NetworkCookieTest extends TestCase
             self::assertFalse($cookie->isCookieUseSecure());
         });
     }
+    public function testCookieSecureDefaultUsesOnlyExplicitlyTrustedProxy()
+    {
+        $this->withServerValues([
+            'HTTPS' => 'off',
+            'REMOTE_ADDR' => '192.0.2.15',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'HTTP_HOST' => 'www.example.test:8443',
+        ], function () {
+            $cookie = new Cookie();
+            $cookie->setCookieParameters('/account');
+            self::assertFalse($cookie->isCookieUseSecure());
+
+            $cookie->setCookieTrustedProxies(['192.0.2.0/24']);
+            self::assertTrue($cookie->isCookieUseSecure());
+            self::assertSame(['192.0.2.0/24'], $cookie->getCookieTrustedProxies());
+
+            $cookie->setCookieTrustedProxies([]);
+            self::assertFalse($cookie->isCookieUseSecure());
+        });
+    }
+
+    public function testExplicitCookieSecureOverrideWinsOverTrustedProxy()
+    {
+        $this->withServerValues([
+            'HTTPS' => 'off',
+            'REMOTE_ADDR' => '192.0.2.15',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+        ], function () {
+            $cookie = new Cookie();
+            $cookie->setCookieParameters('/', null, 'example.test', false);
+            $cookie->setCookieTrustedProxies(['192.0.2.0/24']);
+            self::assertFalse($cookie->isCookieUseSecure());
+
+            $cookie->setCookieUseSecure(null);
+            $cookie->setCookieParameters('/', null, null, null);
+            self::assertTrue($cookie->isCookieUseSecure());
+
+            $cookie->setCookieUseSecure(false);
+            $cookie->setCookieTrustedProxies([]);
+            self::assertFalse($cookie->isCookieUseSecure());
+        });
+    }
+
+    public function testInvalidTrustedProxyConfigurationIsRejected()
+    {
+        foreach (['192.0.2.1/33', '2001:db8::1/129', 'not-an-address', ''] as $proxy) {
+            try {
+                (new Cookie())->setCookieTrustedProxies([$proxy]);
+                self::fail('Expected invalid trusted proxy to be rejected: ' . $proxy);
+            } catch (\InvalidArgumentException $exception) {
+                self::assertNotSame('', $exception->getMessage());
+            }
+        }
+    }
+
+    public function testLegacyFacadeCanConfigureTrustedProxies()
+    {
+        $this->withServerValues([
+            'HTTPS' => 'off',
+            'REMOTE_ADDR' => '2001:db8::15',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+        ], function () {
+            $legacy = new \TorneLIB\MODULE_NETWORK();
+            $legacy->setCookieTrustedProxies(['2001:db8::/32']);
+            self::assertTrue($legacy->isCookieUseSecure());
+            self::assertSame(['2001:db8::/32'], $legacy->getCookieTrustedProxies());
+        });
+    }
+
 }
