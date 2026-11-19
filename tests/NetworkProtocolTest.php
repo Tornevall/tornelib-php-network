@@ -55,4 +55,95 @@ class NetworkProtocolTest extends TestCase
             $_SERVER = $original;
         }
     }
+    public function testForwardedProtocolUsesOnlyTrustedDirectPeers()
+    {
+        $cases = [
+            ['192.0.2.15', 'https', ['192.0.2.0/24'], true],
+            ['192.0.2.15', 'HTTPS', ['192.0.2.15'], true],
+            ['192.0.3.15', 'https', ['192.0.2.0/24'], false],
+            ['192.0.2.15', 'https', [], false],
+            ['192.0.2.15', 'http', ['192.0.2.0/24'], false],
+            ['192.0.2.15', 'https,http', ['192.0.2.0/24'], false],
+            ['2001:db8::15', 'https', ['2001:db8::/32'], true],
+            ['2001:db8::15', 'https', ['2001:db8::15'], true],
+            ['2001:db9::15', 'https', ['2001:db8::/32'], false],
+            ['2001:db8::15', 'https', ['192.0.2.0/24'], false],
+            ['192.0.2.15', 'https', ['2001:db8::/32'], false],
+            ['not-an-ip', 'https', ['0.0.0.0/0'], false],
+            ['192.0.2.15', 'https', ['invalid-cidr'], false],
+        ];
+
+        $original = $_SERVER;
+        try {
+            foreach ($cases as $case) {
+                $_SERVER['HTTPS'] = 'off';
+                $_SERVER['REMOTE_ADDR'] = $case[0];
+                $_SERVER['HTTP_X_FORWARDED_PROTO'] = $case[1];
+                $_SERVER['HTTP_X_FORWARDED_FOR'] = '192.0.2.15';
+
+                self::assertSame(
+                    $case[3],
+                    Statics::getCurrentServerProtocol(false, $case[2]),
+                    $case[0] . '/' . $case[1]
+                );
+                self::assertSame(
+                    $case[3] ? 'https' : 'http',
+                    Statics::getCurrentServerProtocol(true, $case[2])
+                );
+                self::assertSame(
+                    $case[3],
+                    (new Network())->getIsHttps($case[2])
+                );
+                self::assertSame(
+                    $case[3] ? 'https' : 'http',
+                    (new Network())->getProtocol($case[2])
+                );
+                self::assertSame(
+                    $case[3],
+                    (new \TorneLIB\MODULE_NETWORK())->getIsSecureHttp(false, $case[2])
+                );
+            }
+        } finally {
+            $_SERVER = $original;
+        }
+    }
+
+    public function testForgedForwardedForHeaderNeverEstablishesProxyTrust()
+    {
+        $original = $_SERVER;
+        try {
+            $_SERVER['HTTPS'] = 'off';
+            $_SERVER['REMOTE_ADDR'] = '198.51.100.9';
+            $_SERVER['HTTP_X_FORWARDED_FOR'] = '192.0.2.8';
+            $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
+
+            self::assertFalse(
+                Statics::getCurrentServerProtocol(false, ['192.0.2.0/24'])
+            );
+
+            $_SERVER['HTTPS'] = 'on';
+            self::assertTrue(
+                Statics::getCurrentServerProtocol(false, ['192.0.2.0/24'])
+            );
+        } finally {
+            $_SERVER = $original;
+        }
+    }
+
+    public function testNonStringForwardedSchemeIsNeverAccepted()
+    {
+        $original = $_SERVER;
+        try {
+            $_SERVER['HTTPS'] = 'off';
+            $_SERVER['REMOTE_ADDR'] = '192.0.2.10';
+            $_SERVER['HTTP_X_FORWARDED_PROTO'] = ['https'];
+
+            self::assertFalse(
+                Statics::getCurrentServerProtocol(false, ['192.0.2.0/24'])
+            );
+        } finally {
+            $_SERVER = $original;
+        }
+    }
+
 }
