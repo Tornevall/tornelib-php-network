@@ -57,6 +57,6 @@ jobs:
         run: |
           php -l bin/update-public-suffix-list.php
           php bin/update-public-suffix-list.php --input-file=resources/public_suffix_list.dat --output-file="$RUNNER_TEMP/psl-rebuilt.dat"
-          diff -u <(grep -v '^//' resources/public_suffix_list.dat | grep -v '^
-) <(grep -v '^//' "$RUNNER_TEMP/psl-rebuilt.dat" | grep -v '^
-)
+          grep -v '^//' resources/public_suffix_list.dat > "$RUNNER_TEMP/psl-current.rules"
+          grep -v '^//' "$RUNNER_TEMP/psl-rebuilt.dat" > "$RUNNER_TEMP/psl-rebuilt.rules"
+          diff -u "$RUNNER_TEMP/psl-current.rules" "$RUNNER_TEMP/psl-rebuilt.rules"
