@@ -78,7 +78,7 @@ class NetworkCookieHeaderTest extends TestCase
         return [$process, $port, $log];
     }
 
-    private function requestCookieHeader($port, $scenario)
+    private function requestCookieHeaders($port, $scenario)
     {
         $url = 'http://127.0.0.1:' . $port . '/cookie-response.php?scenario='
             . rawurlencode($scenario);
@@ -94,6 +94,12 @@ class NetworkCookieHeaderTest extends TestCase
                 $matches[] = substr($header, strlen('Set-Cookie: '));
             }
         }
+        return $matches;
+    }
+
+    private function requestCookieHeader($port, $scenario)
+    {
+        $matches = $this->requestCookieHeaders($port, $scenario);
         self::assertCount(1, $matches, 'Missing or duplicated Set-Cookie header: ' . $scenario);
 
         return $matches[0];
@@ -148,6 +154,36 @@ class NetworkCookieHeaderTest extends TestCase
                     'Unexpected Domain attribute for ' . $scenario . ': ' . $header
                 );
             }
+
+            foreach ([
+                'public_suffix_co_uk',
+                'public_suffix_github_io',
+                'malformed_host',
+            ] as $scenario) {
+                $header = $this->requestCookieHeader($port, $scenario);
+                self::assertFalse(
+                    stripos($header, 'domain=') !== false,
+                    'Public suffix or malformed Host must not set Domain: ' . $header
+                );
+            }
+
+            $header = $this->requestCookieHeader($port, 'private_domain');
+            self::assertTrue(
+                stripos($header, 'domain=.alice.github.io') !== false,
+                $header
+            );
+
+            $headers = $this->requestCookieHeaders($port, 'changing_request');
+            self::assertCount(3, $headers);
+            self::assertTrue(strpos($headers[0], 'first=') === 0);
+            self::assertTrue(stripos($headers[0], 'domain=.first.example.test') !== false);
+            $this->assertCookieAttribute($headers[0], 'Secure', true);
+            self::assertTrue(strpos($headers[1], 'second=') === 0);
+            self::assertFalse(stripos($headers[1], 'domain=') !== false);
+            $this->assertCookieAttribute($headers[1], 'Secure', false);
+            self::assertTrue(strpos($headers[2], 'third=') === 0);
+            self::assertTrue(stripos($headers[2], 'domain=.second.example.test') !== false);
+            $this->assertCookieAttribute($headers[2], 'Secure', true);
 
             $header = $this->requestCookieHeader($port, 'default_expiry');
             self::assertTrue(stripos($header, 'expires=') !== false, $header);

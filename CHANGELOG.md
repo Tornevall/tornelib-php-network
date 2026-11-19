@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Prevent automatic cookie Domain attributes for public suffixes (including private suffixes), malformed HTTP_HOST values and IP literals. Host-only cookies are used instead.
+- Refresh inferred cookie Domain and HTTPS/Secure settings on each cookie emission for safe object reuse across requests while preserving explicit user configuration.
+- Add deterministic unit and native HTTP Set-Cookie regression coverage for PSL restrictions and cross-request state.
 - Modernized legacy PHPUnit tests with native `test*` methods and removed avoidable `@test`/`@dataProvider` metadata deprecations without losing fixture assertions on PHP >=7.0.
 - Restored `$_SERVER` in legacy regression tests and strengthened missing-method exception expectations to prevent test-order dependencies and false passes.
 
