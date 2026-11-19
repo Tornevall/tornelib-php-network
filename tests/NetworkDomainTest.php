@@ -63,6 +63,36 @@ class NetworkDomainTest extends TestCase
             ['https://www.example.com/one', 'example.com'],
             ['https://www.example.co.uk/two', 'example.co.uk'],
             ['https://www.example.com.au/three', 'example.com.au'],
+            ['a.b.example.com', 'example.com'],
+            ['www.example.co.za', 'example.co.za'],
+            ['foo.uk.com', 'foo.uk.com'],
+            ['sub.foo.uk.com', 'foo.uk.com'],
+            ['alice.github.io', 'alice.github.io'],
+            ['one.alice.github.io', 'alice.github.io'],
+            ['github.io', ''],
+            ['bar.blogspot.com', 'bar.blogspot.com'],
+            ['bar.s3.amazonaws.com', 'bar.s3.amazonaws.com'],
+            ['s3.amazonaws.com', ''],
+            ['a.b.ck', 'a.b.ck'],
+            ['a.ck', ''],
+            ['www.ck', 'www.ck'],
+            ['a.www.ck', 'www.ck'],
+            ['a.city.kawasaki.jp', 'city.kawasaki.jp'],
+            ['www.a.kawasaki.jp', 'www.a.kawasaki.jp'],
+            ['a.kawasaki.jp', ''],
+            ['https://u:p@www.city.kawasaki.jp:8443/path', 'city.kawasaki.jp'],
+            ['sub.xn--aroport-bya.ci', 'sub.xn--aroport-bya.ci'],
+            ['xn--aroport-bya.ci', ''],
+            ['FOO.Example.COM.', 'example.com'],
+            ['www.example.co.uk:443', 'example.co.uk'],
+            ['example.unknown-tld', 'example.unknown-tld'],
+            ['co.uk', ''],
+            ['com', ''],
+            ['www.example.com..', ''],
+            ['-bad.example.com', ''],
+            ['good..example.com', ''],
+            ['http://[::1]:8080', ''],
+            ['example.com:999999', ''],
             ['localhost', ''],
             ['127.0.0.1', ''],
         ];
@@ -74,6 +104,41 @@ class NetworkDomainTest extends TestCase
     public function testRegistrableDomainOrEmptyString($host, $expected)
     {
         self::assertSame($expected, (new Domain())->getDomainName($host));
+    }
+
+    public function testCompletePublicSuffixSnapshotIsBundled()
+    {
+        $file = __DIR__ . '/../resources/public_suffix_list.dat';
+        self::assertFileExists($file);
+        $content = file_get_contents($file);
+        self::assertNotFalse($content);
+        self::assertContains('// ===BEGIN ICANN DOMAINS===', $content);
+        self::assertContains('// ===BEGIN PRIVATE DOMAINS===', $content);
+        self::assertContains('*.ck', $content);
+        self::assertContains('!www.ck', $content);
+        self::assertContains('github.io', $content);
+        self::assertGreaterThan(100000, strlen($content));
+    }
+
+    public function testUnicodeHostIsConvertedToAsciiOrFailsClosedWithoutIntl()
+    {
+        $result = (new Domain())->getDomainName('https://shop.aéroport.ci/a');
+        if (function_exists('idn_to_ascii')) {
+            self::assertSame('shop.xn--aroport-bya.ci', $result);
+        } else {
+            self::assertSame('', $result);
+        }
+    }
+
+    public function testEmptyInputUsesCurrentHttpHost()
+    {
+        $original = $_SERVER;
+        try {
+            $_SERVER['HTTP_HOST'] = 'www.example.co.uk:443';
+            self::assertSame('example.co.uk', (new Domain())->getDomainName(''));
+        } finally {
+            $_SERVER = $original;
+        }
     }
 
     public function testExtractQuotedUrlsAndDeduplicate()
