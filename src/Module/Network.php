@@ -88,9 +88,9 @@ class Network
      * @return mixed
      * @since 6.1.0
      */
-    public function getIsSecureHttp(bool $returnProtocol = false)
+    public function getIsSecureHttp(bool $returnProtocol = false, array $trustedProxies = [])
     {
-        return Statics::getCurrentServerProtocol($returnProtocol);
+        return Statics::getCurrentServerProtocol($returnProtocol, $trustedProxies);
     }
 
     /**
@@ -114,18 +114,18 @@ class Network
      * @return bool|string
      * @since 6.1.0
      */
-    public function getProtocol()
+    public function getProtocol(array $trustedProxies = [])
     {
-        return Statics::getCurrentServerProtocol(true);
+        return Statics::getCurrentServerProtocol(true, $trustedProxies);
     }
 
     /**
      * @return bool
      * @since 6.1.0
      */
-    public function getIsHttps(): bool
+    public function getIsHttps(array $trustedProxies = []): bool
     {
-        return (bool)Statics::getCurrentServerProtocol();
+        return (bool)Statics::getCurrentServerProtocol(false, $trustedProxies);
     }
 
     /*** Functions below has a key role in deprecation and compatibility ***/
