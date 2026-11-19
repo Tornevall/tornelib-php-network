@@ -44,6 +44,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           tools: composer:${{ matrix.composer }}, phpunit:${{ matrix.phpunit }}
+          extensions: intl
           coverage: none
       - name: Validate Composer metadata
         run: composer validate --no-check-publish
@@ -51,3 +52,11 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
       - name: Run deterministic PHPUnit tests
         run: phpunit --configuration phpunit.xml
+      - name: Verify PSL updater against the bundled offline snapshot
+        if: matrix.php == '8.4'
+        run: |
+          php -l bin/update-public-suffix-list.php
+          php bin/update-public-suffix-list.php --input-file=resources/public_suffix_list.dat --output-file="$RUNNER_TEMP/psl-rebuilt.dat"
+          diff -u <(grep -v '^//' resources/public_suffix_list.dat | grep -v '^
+) <(grep -v '^//' "$RUNNER_TEMP/psl-rebuilt.dat" | grep -v '^
+)
