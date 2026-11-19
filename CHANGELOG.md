@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Removed the obsolete fixed `composer.json` library version so Composer and Packagist infer future releases from Git tags without version mismatches. No release tag was created.
+
 - Prevent automatic cookie Domain attributes for public suffixes (including private suffixes), malformed HTTP_HOST values and IP literals. Host-only cookies are used instead.
 - Refresh inferred cookie Domain and HTTPS/Secure settings on each cookie emission for safe object reuse across requests while preserving explicit user configuration.
 - Add deterministic unit and native HTTP Set-Cookie regression coverage for PSL restrictions and cross-request state.

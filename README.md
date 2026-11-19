@@ -8,6 +8,8 @@ Network 6.1.x extracts network utility functions from NetCurl so they can be mai
 
 PHP 7.0 or newer, matching `composer.json`. The supported compatibility surface is maintained by testing both legacy and current public entry points.
 
+Published library versions are derived from Git tags by Composer/Packagist; `composer.json` intentionally has no hard-coded `version` field. Do not add or rewrite tags for unreleased work. Release publication requires a new, immutable tag after the intended changes are merged and verified.
+
 ## Testing
 
 Install dependencies with Composer, and run PHPUnit using a version compatible with your PHP runtime:
