@@ -72,7 +72,8 @@ class Address
     }
 
     /**
-     * Test IPv4 membership in a CIDR. IPv6 is not supported by this method.
+     * Test whether an IPv4 or IPv6 address is a member of a matching CIDR.
+     * Valid addresses of different families never belong to the same range.
      *
      * @param string $IP
      * @param string $CIDR
@@ -81,18 +82,58 @@ class Address
      */
     public function isIpInRange(string $IP, string $CIDR): bool
     {
-        list($baseAddress, $prefix) = $this->parseIpv4Cidr($CIDR);
-        if (filter_var($IP, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+        if (!preg_match('/^([^\\/]+)\\/([0-9]{1,3})$/', $CIDR, $parts) ||
+            filter_var($parts[1], FILTER_VALIDATE_IP) === false
+        ) {
             throw new AddressException(
-                'Not a valid IPv4 address.',
+                'Not a proper IPv4 or IPv6 CIDR range.',
+                Constants::LIB_NETWORK_BAD_CIDR_STRING
+            );
+        }
+
+        $network = inet_pton($parts[1]);
+        $prefix = (int)$parts[2];
+
+        if ($network === false || $prefix > strlen($network) * 8) {
+            throw new AddressException(
+                'CIDR prefix is outside the address family range.',
+                Constants::LIB_NETWORK_BAD_CIDR_STRING
+            );
+        }
+
+        if (filter_var($IP, FILTER_VALIDATE_IP) === false) {
+            throw new AddressException(
+                'Not a valid IPv4 or IPv6 address.',
                 Constants::LIB_NETWORK_INVALID_IPV4
             );
         }
 
-        $address = ip2long($IP);
-        $networkMask = $prefix === 0 ? 0 : (-1 << (32 - $prefix));
+        $address = inet_pton($IP);
+        if ($address === false) {
+            throw new AddressException(
+                'Not a valid IPv4 or IPv6 address.',
+                Constants::LIB_NETWORK_INVALID_IPV4
+            );
+        }
 
-        return ($address & $networkMask) === ($baseAddress & $networkMask);
+        if (strlen($network) !== strlen($address)) {
+            return false;
+        }
+
+        $wholeBytes = intdiv($prefix, 8);
+        if (substr($network, 0, $wholeBytes) !== substr($address, 0, $wholeBytes)) {
+            return false;
+        }
+
+        $remainingBits = $prefix % 8;
+        if ($remainingBits === 0) {
+            return true;
+        }
+
+        $mask = (0xff << (8 - $remainingBits)) & 0xff;
+
+        return (ord($address[$wholeBytes]) & $mask) ===
+            (ord($network[$wholeBytes]) & $mask);
     }
 
     /**
