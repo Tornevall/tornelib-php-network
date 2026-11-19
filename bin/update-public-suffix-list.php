@@ -17,11 +17,34 @@ if (!function_exists('idn_to_ascii') ||
 }
 
 $url = 'https://publicsuffix.org/list/public_suffix_list.dat';
-$context = stream_context_create([
-    'http' => ['timeout' => 30, 'follow_location' => 0],
-    'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
-]);
-$data = @file_get_contents($url, false, $context);
+$inputFile = '';
+$outputFile = '';
+
+foreach (array_slice($argv, 1) as $argument) {
+    if (strpos($argument, '--input-file=') === 0) {
+        $inputFile = substr($argument, strlen('--input-file='));
+    } elseif (strpos($argument, '--output-file=') === 0) {
+        $outputFile = substr($argument, strlen('--output-file='));
+    } else {
+        fwrite(STDERR, "Unknown argument: " . $argument . "\n");
+        exit(1);
+    }
+}
+
+if (($inputFile === '') !== ($outputFile === '')) {
+    fwrite(STDERR, "Pass both --input-file and --output-file for an offline validation run.\n");
+    exit(1);
+}
+
+if ($inputFile !== '') {
+    $data = @file_get_contents($inputFile);
+} else {
+    $context = stream_context_create([
+        'http' => ['timeout' => 30, 'follow_location' => 0],
+        'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
+    ]);
+    $data = @file_get_contents($url, false, $context);
+}
 if (!is_string($data) || strlen($data) < 100000 ||
     strpos($data, '// ===BEGIN ICANN DOMAINS===') === false ||
     strpos($data, '// ===END ICANN DOMAINS===') === false ||
@@ -103,7 +126,7 @@ if ($count < 10000) {
     exit(1);
 }
 
-$destination = __DIR__ . '/../resources/public_suffix_list.dat';
+$destination = $outputFile !== '' ? $outputFile : __DIR__ . '/../resources/public_suffix_list.dat';
 $temporary = $destination . '.tmp';
 $contents = implode("\n", $output) . "\n";
 
