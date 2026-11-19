@@ -17,7 +17,7 @@ composer install
 phpunit --configuration phpunit.xml
 ```
 
-The default suite runs deterministically without external DNS or live network services. Three legacy Git tag integration tests are retained but skipped unless you explicitly opt in:
+The default suite runs deterministically without external DNS or live network services. Legacy PHPUnit tests now use standard `test*` naming, and fixture cases are exercised by loops that retain all assertions on every PHP runtime in the CI matrix. Request-global `$_SERVER` changes are restored after each test. Three legacy Git tag integration tests are retained but skipped unless you explicitly opt in:
 
 ```sh
 TORNELIB_NETWORK_LIVE_TESTS=1 phpunit --configuration phpunit.xml

@@ -15,16 +15,15 @@ class NetworkAddressTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider validAddressCases
-     */
-    public function testAddressTypeAndReverseArpa($address, $type, $arpa)
+    public function testAddressTypeAndReverseArpa()
     {
         $network = new Address();
-
-        self::assertTrue($network->isValidIpAddress($address));
-        self::assertSame($type, $network->getIpType($address));
-        self::assertSame($arpa, $network->getArpa($address));
+        foreach (self::validAddressCases() as $case) {
+            list($address, $type, $arpa) = $case;
+            self::assertTrue($network->isValidIpAddress($address), $address);
+            self::assertSame($type, $network->getIpType($address), $address);
+            self::assertSame($arpa, $network->getArpa($address), $address);
+        }
     }
 
     public function testInvalidAddressIsRejected()
@@ -70,12 +69,12 @@ class NetworkAddressTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider cidrRangeCases
-     */
-    public function testCompleteCidrRangeIncludesEveryAddress($cidr, $expected)
+    public function testCompleteCidrRangeIncludesEveryAddress()
     {
-        self::assertSame($expected, (new Address())->getRangeFromMask($cidr));
+        foreach (self::cidrRangeCases() as $case) {
+            list($cidr, $expected) = $case;
+            self::assertSame($expected, (new Address())->getRangeFromMask($cidr), $cidr);
+        }
     }
 
     public function testOversizedCidrEnumerationIsRejected()
@@ -96,13 +95,17 @@ class NetworkAddressTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider invalidCidrCases
-     */
-    public function testInvalidCidrRangeIsRejected($cidr)
+    public function testInvalidCidrRangeIsRejected()
     {
-        $this->expectException(ExceptionHandler::class);
-        (new Address())->getRangeFromMask($cidr);
+        foreach (self::invalidCidrCases() as $case) {
+            $cidr = $case[0];
+            try {
+                (new Address())->getRangeFromMask($cidr);
+                self::fail('Expected invalid CIDR to be rejected: ' . $cidr);
+            } catch (ExceptionHandler $exception) {
+                self::assertNotSame('', $exception->getMessage(), $cidr);
+            }
+        }
     }
 
     public static function membershipCases()
@@ -118,12 +121,12 @@ class NetworkAddressTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider membershipCases
-     */
-    public function testCidrMembership($address, $cidr, $expected)
+    public function testCidrMembership()
     {
-        self::assertSame($expected, (new Address())->isIpInRange($address, $cidr));
+        foreach (self::membershipCases() as $case) {
+            list($address, $cidr, $expected) = $case;
+            self::assertSame($expected, (new Address())->isIpInRange($address, $cidr), $address . ' / ' . $cidr);
+        }
     }
 
     public static function ipv6MembershipCases()
@@ -147,12 +150,12 @@ class NetworkAddressTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider ipv6MembershipCases
-     */
-    public function testIPv6CidrMembershipAndMixedAddressFamilies($address, $cidr, $expected)
+    public function testIPv6CidrMembershipAndMixedAddressFamilies()
     {
-        self::assertSame($expected, (new Address())->isIpInRange($address, $cidr));
+        foreach (self::ipv6MembershipCases() as $case) {
+            list($address, $cidr, $expected) = $case;
+            self::assertSame($expected, (new Address())->isIpInRange($address, $cidr), $address . ' / ' . $cidr);
+        }
     }
 
     public static function invalidIpv6CidrCases()
@@ -169,13 +172,17 @@ class NetworkAddressTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider invalidIpv6CidrCases
-     */
-    public function testInvalidIPv6CidrIsRejected($address, $cidr)
+    public function testInvalidIPv6CidrIsRejected()
     {
-        $this->expectException(ExceptionHandler::class);
-        (new Address())->isIpInRange($address, $cidr);
+        foreach (self::invalidIpv6CidrCases() as $case) {
+            list($address, $cidr) = $case;
+            try {
+                (new Address())->isIpInRange($address, $cidr);
+                self::fail('Expected invalid IPv6 CIDR to be rejected: ' . $cidr);
+            } catch (ExceptionHandler $exception) {
+                self::assertNotSame('', $exception->getMessage(), $cidr);
+            }
+        }
     }
 
     public function testInvalidIPv6ClientAddressIsRejected()

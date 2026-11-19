@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Modernized legacy PHPUnit tests with native `test*` methods and removed avoidable `@test`/`@dataProvider` metadata deprecations without losing fixture assertions on PHP >=7.0.
+- Restored `$_SERVER` in legacy regression tests and strengthened missing-method exception expectations to prevent test-order dependencies and false passes.
+
 - Completed cookie security regressions #4 and #6: explicit trusted proxy IPv4/IPv6 allowlists for forwarded HTTPS detection; default remains untrusted. Explicit Secure-cookie overrides and legacy Network facades remain supported.
 - Added deterministic security checks for direct-peer trust, forged forwarding headers, malformed ranges and real `Set-Cookie` HTTP output (Path, Domain, prefix, Secure, Expires, localhost/IP/missing-host defaults) via an isolated local PHP test server.
 
