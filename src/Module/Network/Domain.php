@@ -236,7 +236,7 @@ class Domain
             if (!function_exists('idn_to_ascii')) {
                 return '';
             }
-            $host = idn_to_ascii($host, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
+            $host = idn_to_ascii($host, IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46);
             if (!is_string($host)) {
                 return '';
             }
