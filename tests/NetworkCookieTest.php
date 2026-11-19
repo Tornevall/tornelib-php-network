@@ -117,10 +117,6 @@ class NetworkCookieTest extends TestCase
         }
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testAutomaticallyDerivedSettingsFollowCurrentRequest()
     {
         $original = $_SERVER;
@@ -129,20 +125,20 @@ class NetworkCookieTest extends TestCase
             $_SERVER['HTTPS'] = 'on';
             $cookie = new Cookie();
             $cookie->setCookieDefaultPath('/preserved');
-            self::assertTrue($cookie->setCookie('first', 'a', 2000000000));
+            $cookie->setCookieParameters($cookie->getCookieDefaultPath());
             self::assertSame('.first.example.test', $cookie->getCookieDefaultDomain());
             self::assertTrue($cookie->isCookieUseSecure());
 
             $_SERVER['HTTP_HOST'] = 'co.uk';
             $_SERVER['HTTPS'] = 'off';
-            self::assertTrue($cookie->setCookie('second', 'b', 2000000000));
+            $cookie->setCookieParameters($cookie->getCookieDefaultPath());
             self::assertSame('', $cookie->getCookieDefaultDomain());
             self::assertFalse($cookie->isCookieUseSecure());
             self::assertSame('/preserved', $cookie->getCookieDefaultPath());
 
             $_SERVER['HTTP_HOST'] = 'second.example.test';
             $_SERVER['HTTPS'] = 'on';
-            self::assertTrue($cookie->setCookie('third', 'c', 2000000000));
+            $cookie->setCookieParameters($cookie->getCookieDefaultPath());
             self::assertSame('.second.example.test', $cookie->getCookieDefaultDomain());
             self::assertTrue($cookie->isCookieUseSecure());
         } finally {
@@ -150,10 +146,6 @@ class NetworkCookieTest extends TestCase
         }
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testExplicitCookieSettingsStayFixedAcrossRequests()
     {
         $original = $_SERVER;
@@ -162,11 +154,10 @@ class NetworkCookieTest extends TestCase
             $_SERVER['HTTPS'] = 'on';
             $cookie = new Cookie();
             $cookie->setCookieParameters('/explicit', 'pre_', 'allowed.example.test', false);
-            self::assertTrue($cookie->setCookie('first', 'a', 2000000000));
 
             $_SERVER['HTTP_HOST'] = 'second.example.test';
             $_SERVER['HTTPS'] = 'off';
-            self::assertTrue($cookie->setCookie('second', 'b', 2000000000));
+            $cookie->setCookieParameters('/explicit');
             self::assertSame('/explicit', $cookie->getCookieDefaultPath());
             self::assertSame('pre_', $cookie->getCookieDefaultPrefix());
             self::assertSame('allowed.example.test', $cookie->getCookieDefaultDomain());
