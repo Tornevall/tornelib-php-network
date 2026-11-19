@@ -31,7 +31,7 @@ Live tests require the external Git hosts and associated NetCurl utilities to be
 - `Cookie::setCookieTrustedProxies(array $allowlist)` configures the optional trusted proxy ranges (IPv4 or IPv6) for automatic Secure-cookie defaults. For example:
 
 ```php
-$cookie = new \\TorneLIB\\Module\\Network\\Cookie();
+$cookie = new \TorneLIB\Module\Network\Cookie();
 $cookie->setCookieTrustedProxies(['192.0.2.0/24', '2001:db8::/32']);
 $cookie->setCookieDefaultPath('/app');
 $cookie->setCookie('session', 'token');
