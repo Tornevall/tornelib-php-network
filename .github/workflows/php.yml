@@ -13,6 +13,7 @@ jobs:
   phpunit:
     name: PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       fail-fast: false
       matrix:
@@ -32,6 +33,10 @@ jobs:
           - php: '8.5'
             phpunit: '11'
             composer: 'v2'
+          - php: '8.6'
+            phpunit: '11'
+            composer: 'v2'
+            experimental: true
     steps:
       - uses: actions/checkout@v4
       - name: Set up PHP
