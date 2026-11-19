@@ -27,7 +27,18 @@ Live tests require the external Git hosts and associated NetCurl utilities to be
 
 ### Security and compatibility notes
 
-- The `Proxy` class returns raw request header values; forwarded headers are untrusted unless the application independently verifies its reverse proxy.
+- The `Proxy` class returns raw request header values. Forwarded protocol headers are ignored by default. Explicitly allowlisting a direct peer's IP/CIDR permits `X-Forwarded-Proto: https` to count as HTTPS. A trusted reverse proxy **must overwrite or strip client-supplied forwarding headers**; never trust `X-Forwarded-For` as the direct peer.
+- `Cookie::setCookieTrustedProxies(array $allowlist)` configures the optional trusted proxy ranges (IPv4 or IPv6) for automatic Secure-cookie defaults. For example:
+
+```php
+$cookie = new \\TorneLIB\\Module\\Network\\Cookie();
+$cookie->setCookieTrustedProxies(['192.0.2.0/24', '2001:db8::/32']);
+$cookie->setCookieDefaultPath('/app');
+$cookie->setCookie('session', 'token');
+```
+
+- The same proxy allowlist can be supplied explicitly to `Statics::getCurrentServerProtocol(false, $allowlist)`, `Network::getIsHttps($allowlist)` and `Network::getProtocol($allowlist)`. Invalid proxy ranges passed to `setCookieTrustedProxies()` throw `InvalidArgumentException`. An empty list disables forwarding trust. An explicit cookie Secure override still wins over auto-detection. This does **not** make an untrusted HTTP connection secure; TLS must be handled at the trusted proxy.
+- The test suite verifies native `Set-Cookie` headers using a short-lived PHP built-in HTTP server bound to `127.0.0.1` (requires CLI process and loopback socket support). It checks Path, Domain, prefix, Secure, expiry and host-only behavior across PHP runtimes.
 - `isIpInRange` accepts IPv4 and IPv6 CIDRs (`/0` to `/32` and `/0` to `/128` respectively), rejecting invalid input with a library exception and returning `false` for valid mixed-family comparisons. IPv4-mapped IPv6 addresses are treated as IPv6, not coerced into IPv4.
 - PHP 8.6 is included in CI as an experimental compatibility probe while the first stable release is being published. It is not yet a separately guaranteed runtime.
 - `getRangeFromMask` returns *all* addresses in a small IPv4 range, including first and last addresses. Ranges above 65536 addresses are rejected to avoid unbounded memory allocation.
