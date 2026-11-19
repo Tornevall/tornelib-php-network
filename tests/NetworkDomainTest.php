@@ -140,6 +140,26 @@ class NetworkDomainTest extends TestCase
         }
     }
 
+    public function testUnicodeDotSeparatorsAreCanonicalizedBeforePslMatching()
+    {
+        $domain = new Domain();
+        $cases = [
+            ['www.example.co.uk。', 'example.co.uk'],
+            ['www.example.co.uk．', 'example.co.uk'],
+            ['www.example.co.uk｡', 'example.co.uk'],
+            ['alice.github.io。', 'alice.github.io'],
+            ['github.io。', ''],
+            ['www.ck。', 'www.ck'],
+            ['www.example.co.uk。｡', ''],
+            ['www.example.co.uk．.', ''],
+        ];
+
+        foreach ($cases as $case) {
+            $expected = function_exists('idn_to_ascii') ? $case[1] : '';
+            self::assertSame($expected, $domain->getDomainName($case[0]), $case[0]);
+        }
+    }
+
     public function testEmptyInputUsesCurrentHttpHost()
     {
         $original = $_SERVER;
