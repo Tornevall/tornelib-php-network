@@ -130,6 +130,16 @@ class NetworkDomainTest extends TestCase
         }
     }
 
+    public function testIdnNormalizationPreservesNonTransitionalHostLabels()
+    {
+        $domain = new Domain();
+        if (function_exists('idn_to_ascii')) {
+            self::assertSame('xn--strae-oqa.de', $domain->getDomainName('straße.de'));
+        } else {
+            self::assertSame('', $domain->getDomainName('straße.de'));
+        }
+    }
+
     public function testEmptyInputUsesCurrentHttpHost()
     {
         $original = $_SERVER;
