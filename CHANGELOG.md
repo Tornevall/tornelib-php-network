@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Completed cookie security regressions #4 and #6: explicit trusted proxy IPv4/IPv6 allowlists for forwarded HTTPS detection; default remains untrusted. Explicit Secure-cookie overrides and legacy Network facades remain supported.
+- Added deterministic security checks for direct-peer trust, forged forwarding headers, malformed ranges and real `Set-Cookie` HTTP output (Path, Domain, prefix, Secure, Expires, localhost/IP/missing-host defaults) via an isolated local PHP test server.
+
 - Added deterministic PHPUnit coverage for IPv4/IPv6 and ARPA conversions, CIDR ranges and membership, domain parsing and URL extraction, cookie defaults, proxy header collection, protocol detection, legacy facades and error handler restoration.
 - Retained legacy live Git tag integration tests behind the explicit `TORNELIB_NETWORK_LIVE_TESTS=1` opt-in.
 - Fixed CIDR validation, network alignment, /31 and /32 enumeration, and safe upper bounds on range expansion.
