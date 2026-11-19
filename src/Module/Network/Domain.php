@@ -14,13 +14,12 @@ use TorneLIB\Module\Exception\DomainException;
 class Domain
 {
     /**
-     * Validate a parsed URL host against available DNS records.
-     * No process-global PHP error handler is installed by this method.
+     * Parsed local PSL snapshot shared across Domain instances for this process.
      *
-     * @param string $requestedUrl
-     * @param array|false $parsed
-     * @throws DomainException
+     * @var array|null
      */
+    private static $publicSuffixRules;
+
     /**
      * Resolve DNS entries; override in deterministic tests or custom deployments.
      *
@@ -155,43 +154,156 @@ class Domain
     }
 
     /**
-     * Extract a best-effort base domain. Returns '' for local hosts and IP literals.
+     * Load the complete local PSL snapshot, including ICANN and PRIVATE rules.
+     * Absence or damage is an error; silently guessing is unsafe for cookies.
      *
-     * The listed multi-label public suffixes are a compatibility fallback, not
-     * the complete Public Suffix List. Callers making security decisions must
-     * use a full, maintained PSL implementation.
-     *
-     * @param string $hostname
-     * @return string
-     * @throws Exception
+     * @return array
+     * @throws DomainException
      */
-    public function getDomainName(string $hostname): string
+    private function getPublicSuffixRules(): array
     {
-        $input = $hostname === '' ? (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '') : $hostname;
-        $parsed = $this->getUrlDomain($input);
-        $host = is_string($parsed[0]) ? strtolower(rtrim($parsed[0], '.')) : '';
+        if (self::$publicSuffixRules !== null) {
+            return self::$publicSuffixRules;
+        }
 
-        if ($host === '' ||
+        $file = __DIR__ . '/../../../resources/public_suffix_list.dat';
+        if (!is_readable($file)) {
+            throw new DomainException('The Public Suffix List snapshot is unavailable.');
+        }
+
+        $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (!is_array($lines)) {
+            throw new DomainException('The Public Suffix List snapshot cannot be read.');
+        }
+
+        $rules = ['exact' => [], 'wildcard' => [], 'exception' => []];
+        $sawIcann = false;
+        $sawPrivate = false;
+        $sawEnd = false;
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '// ===BEGIN ICANN DOMAINS===') {
+                $sawIcann = true;
+            } elseif ($line === '// ===BEGIN PRIVATE DOMAINS===') {
+                $sawPrivate = true;
+            } elseif ($line === '// ===END PRIVATE DOMAINS===') {
+                $sawEnd = true;
+            }
+
+            if ($line === '' || strpos($line, '//') === 0) {
+                continue;
+            }
+
+            if ($line[0] === '!') {
+                $rules['exception'][substr($line, 1)] = true;
+            } elseif (strpos($line, '*.') === 0) {
+                $rules['wildcard'][substr($line, 2)] = true;
+            } else {
+                $rules['exact'][$line] = true;
+            }
+        }
+
+        if (!$sawIcann || !$sawPrivate || !$sawEnd ||
+            count($rules['exact']) + count($rules['wildcard']) + count($rules['exception']) < 1000
+        ) {
+            throw new DomainException('The Public Suffix List snapshot is incomplete.');
+        }
+
+        self::$publicSuffixRules = $rules;
+
+        return self::$publicSuffixRules;
+    }
+
+    /**
+     * Normalize a hostname for PSL matching. ASCII and Punycode hosts work
+     * without ext-intl; Unicode hostnames require ext-intl's IDNA support.
+     *
+     * @param string $host
+     * @return string
+     */
+    private function normalizeDomainHost(string $host): string
+    {
+        $host = strtolower($host);
+        if (substr($host, -1) === '.') {
+            $host = substr($host, 0, -1);
+        }
+
+        if (preg_match('/[^\x00-\x7f]/', $host)) {
+            if (!function_exists('idn_to_ascii')) {
+                return '';
+            }
+            $host = idn_to_ascii($host, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
+            if (!is_string($host)) {
+                return '';
+            }
+            $host = strtolower($host);
+        }
+
+        if ($host === '' || strlen($host) > 253 ||
             filter_var(trim($host, '[]'), FILTER_VALIDATE_IP) !== false ||
-            strpos($host, '.') === false ||
             filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false
         ) {
             return '';
         }
 
+        return $host;
+    }
+
+    /**
+     * Resolve a registrable domain (eTLD+1) using the official Public Suffix
+     * List rule algorithm, including wildcard, exception and private rules.
+     * Public suffixes, IP literals, invalid hosts and single-label hosts
+     * return the empty string; IDNs are returned in ASCII/Punycode form.
+     *
+     * @param string $hostname URL or hostname, or '' to read HTTP_HOST
+     * @return string
+     * @throws DomainException If the local PSL data is missing or corrupted
+     */
+    public function getDomainName(string $hostname): string
+    {
+        $input = $hostname === '' ?
+            (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '') : $hostname;
+        $parsed = $this->getUrlDomain($input);
+        $host = is_string($parsed[0]) ? $this->normalizeDomainHost($parsed[0]) : '';
+        if ($host === '') {
+            return '';
+        }
+
         $labels = explode('.', $host);
-        $lastTwo = implode('.', array_slice($labels, -2));
-        $multiPartSuffixes = [
-            'co.uk', 'org.uk', 'gov.uk', 'ac.uk', 'net.uk',
-            'com.au', 'net.au', 'org.au', 'edu.au', 'gov.au',
-            'co.nz', 'org.nz', 'govt.nz', 'com.br', 'com.cn',
-            'co.jp', 'co.kr', 'co.in', 'co.za', 'com.sg',
-        ];
+        $labelCount = count($labels);
+        if ($labelCount < 2) {
+            return '';
+        }
 
-        $requiredLabels = in_array($lastTwo, $multiPartSuffixes, true) ? 3 : 2;
+        $rules = $this->getPublicSuffixRules();
+        $suffixLength = 1; // PSL prevailing implicit '*' rule
 
-        return count($labels) >= $requiredLabels ?
-            implode('.', array_slice($labels, -$requiredLabels)) : '';
+        for ($i = 0; $i < $labelCount; $i++) {
+            $suffix = implode('.', array_slice($labels, $i));
+            $matchedLabels = $labelCount - $i;
+
+            if (isset($rules['exception'][$suffix])) {
+                // An exception always wins; exclude its leftmost label.
+                $suffixLength = $matchedLabels - 1;
+                break;
+            }
+
+            if (isset($rules['exact'][$suffix]) && $matchedLabels > $suffixLength) {
+                $suffixLength = $matchedLabels;
+            }
+
+            if ($i > 0 && isset($rules['wildcard'][$suffix]) &&
+                $matchedLabels + 1 > $suffixLength
+            ) {
+                $suffixLength = $matchedLabels + 1;
+            }
+        }
+
+        if ($labelCount <= $suffixLength) {
+            return '';
+        }
+
+        return implode('.', array_slice($labels, -($suffixLength + 1)));
     }
 
     /**
