@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Prevent automatic cookie Domain attributes for public suffixes (including private suffixes), malformed HTTP_HOST values and IP literals. Host-only cookies are used instead.
+- Refresh inferred cookie Domain and HTTPS/Secure settings on each cookie emission for safe object reuse across requests while preserving explicit user configuration.
+- Add deterministic unit and native HTTP Set-Cookie regression coverage for PSL restrictions and cross-request state.
+
 - Completed cookie security regressions #4 and #6: explicit trusted proxy IPv4/IPv6 allowlists for forwarded HTTPS detection; default remains untrusted. Explicit Secure-cookie overrides and legacy Network facades remain supported.
 - Added deterministic security checks for direct-peer trust, forged forwarding headers, malformed ranges and real `Set-Cookie` HTTP output (Path, Domain, prefix, Secure, Expires, localhost/IP/missing-host defaults) via an isolated local PHP test server.
 
