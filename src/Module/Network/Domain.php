@@ -224,23 +224,29 @@ class Domain
     private function normalizeDomainHost(string $host): string
     {
         $host = strtolower($host);
-        if (strpos($host, '..') !== false) {
-            return '';
-        }
-
-        if (substr($host, -1) === '.') {
-            $host = substr($host, 0, -1);
-        }
 
         if (preg_match('/[^\x00-\x7f]/', $host)) {
             if (!function_exists('idn_to_ascii')) {
                 return '';
             }
-            $host = idn_to_ascii($host, IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46);
+            $host = idn_to_ascii(
+                $host,
+                IDNA_NONTRANSITIONAL_TO_ASCII,
+                INTL_IDNA_VARIANT_UTS46
+            );
             if (!is_string($host)) {
                 return '';
             }
             $host = strtolower($host);
+        }
+
+        // UTS46 may transform Unicode full-stop variants into ASCII dots.
+        // Remove an optional DNS root separator only after normalization.
+        if (strpos($host, '..') !== false) {
+            return '';
+        }
+        if (substr($host, -1) === '.') {
+            $host = substr($host, 0, -1);
         }
 
         if ($host === '' || strlen($host) > 253 ||
