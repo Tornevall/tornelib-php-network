@@ -10,4 +10,6 @@ This repository maintains the TorneLIB network utility library and its compatibi
 - Validate IP and CIDR input before bitwise operations or allocation. Treat authentication and cookie-security behavior as high risk.
 - Keep CI configuration, composer requirements, README and CHANGELOG aligned with actual supported behavior.
 - Avoid external provider/live verification for changes fully testable deterministically.
+- Keep `resources/public_suffix_list.dat` a full PSL snapshot (ICANN and PRIVATE) derived from https://publicsuffix.org/list/public_suffix_list.dat using `bin/update-public-suffix-list.php`. Preserve its MPL-2.0 licensing header. Unit tests must never refresh PSL or depend on the network.
+- Verify the documented `getDomainName()` registrable-domain contract with wildcard, exception, private suffix and IDN test cases before editing its behavior.
 - No API versioning is introduced by maintenance changes.
