@@ -111,12 +111,12 @@ class NetworkDomainTest extends TestCase
         $file = __DIR__ . '/../resources/public_suffix_list.dat';
         self::assertFileExists($file);
         $content = file_get_contents($file);
-        self::assertNotFalse($content);
-        self::assertContains('// ===BEGIN ICANN DOMAINS===', $content);
-        self::assertContains('// ===BEGIN PRIVATE DOMAINS===', $content);
-        self::assertContains('*.ck', $content);
-        self::assertContains('!www.ck', $content);
-        self::assertContains('github.io', $content);
+        self::assertTrue(is_string($content));
+        self::assertTrue(strpos($content, '// ===BEGIN ICANN DOMAINS===') !== false);
+        self::assertTrue(strpos($content, '// ===BEGIN PRIVATE DOMAINS===') !== false);
+        self::assertTrue(strpos($content, '*.ck') !== false);
+        self::assertTrue(strpos($content, '!www.ck') !== false);
+        self::assertTrue(strpos($content, 'github.io') !== false);
         self::assertGreaterThan(100000, strlen($content));
     }
 
