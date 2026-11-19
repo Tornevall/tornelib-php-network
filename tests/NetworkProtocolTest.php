@@ -19,24 +19,24 @@ class NetworkProtocolTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider httpsServerCases
-     */
-    public function testProtocolAndSecureIndicatorStayConsistent($indicator, $secure)
+    public function testProtocolAndSecureIndicatorStayConsistent()
     {
         $original = $_SERVER;
         try {
-            if ($indicator === null) {
-                unset($_SERVER['HTTPS']);
-            } else {
-                $_SERVER['HTTPS'] = $indicator;
-            }
+            foreach (self::httpsServerCases() as $case) {
+                list($indicator, $secure) = $case;
+                if ($indicator === null) {
+                    unset($_SERVER['HTTPS']);
+                } else {
+                    $_SERVER['HTTPS'] = $indicator;
+                }
 
-            $expectedProtocol = $secure ? 'https' : 'http';
-            self::assertSame($secure, Statics::getCurrentServerProtocol());
-            self::assertSame($expectedProtocol, Statics::getCurrentServerProtocol(true));
-            self::assertSame($secure, (new Network())->getIsHttps());
-            self::assertSame($expectedProtocol, (new Network())->getProtocol());
+                $expectedProtocol = $secure ? 'https' : 'http';
+                self::assertSame($secure, Statics::getCurrentServerProtocol());
+                self::assertSame($expectedProtocol, Statics::getCurrentServerProtocol(true));
+                self::assertSame($secure, (new Network())->getIsHttps());
+                self::assertSame($expectedProtocol, (new Network())->getProtocol());
+            }
         } finally {
             $_SERVER = $original;
         }
