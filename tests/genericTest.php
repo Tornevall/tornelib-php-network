@@ -64,7 +64,7 @@ class genericTest extends TestCase
     }
 
     /**
-     * * What happens when obsolete or removed methods are accessed.
+     * What happens when obsolete or removed methods are accessed.
      */
     public function testGetObsoleteMethod()
     {
@@ -74,7 +74,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testGetDeprecatedMethod()
     {
         static::assertTrue((new Network())->getCurrentServerProtocol(true) === 'http');
@@ -107,7 +108,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testGetDeprecatedHttps()
     {
         $this->withServerValues(['HTTPS' => true], function () {
@@ -116,7 +118,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testGetIsSecureHttp()
     {
         $this->withServerValues(['HTTPS' => true], function () {
@@ -125,7 +128,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testGetProtocol()
     {
         $this->withServerValues(['HTTPS' => null], function () {
@@ -134,7 +138,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testGetHttpHost()
     {
         $this->withServerValues(['HTTP_HOST' => null], function () {
@@ -152,7 +157,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testDeprecatedSnakes()
     {
         $encodedString = (new MODULE_NETWORK())->base64url_encode('TEST');
@@ -160,7 +166,7 @@ class genericTest extends TestCase
     }
 
     /**
-     * * @throws \TorneLIB\Exception\ExceptionHandler
+     * @throws \TorneLIB\Exception\ExceptionHandler
      */
     public function testGetGitTagsNetcurl()
     {
@@ -180,7 +186,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testGetGitTagsNetcurlBucket()
     {
         if (getenv('TORNELIB_NETWORK_LIVE_TESTS') !== '1') {
@@ -198,7 +205,7 @@ class genericTest extends TestCase
     }
 
     /**
-     * * @throws ExceptionHandler
+     * @throws ExceptionHandler
      */
     public function testGetGitOldUtil()
     {
@@ -218,7 +225,7 @@ class genericTest extends TestCase
     }
 
     /**
-     * * @throws ExceptionHandler
+     * @throws ExceptionHandler
      */
     public function testGetUrlDomain()
     {
@@ -230,7 +237,7 @@ class genericTest extends TestCase
     }
 
     /**
-     * * @throws ExceptionHandler
+     * @throws ExceptionHandler
      */
     public function testGetUrlDomainException()
     {
@@ -243,7 +250,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testGetUrlsFromHtml()
     {
         $html = '<html>
@@ -271,7 +279,7 @@ class genericTest extends TestCase
     }
 
     /**
-     * * @throws Exception
+     * @throws Exception
      */
     public function testGetDomainName()
     {
@@ -281,7 +289,7 @@ class genericTest extends TestCase
     }
 
     /**
-     * * Test if some of the internal requests are reachable from the static caller. Backward compatible.
+     * Test if some of the internal requests are reachable from the static caller. Backward compatible.
      */
     public function testStaticInternal()
     {
@@ -291,7 +299,7 @@ class genericTest extends TestCase
     }
 
     /**
-     * * Same as statics above but from Network directly.
+     * Same as statics above but from Network directly.
      */
     public function testSecondWayRequest()
     {
@@ -301,7 +309,7 @@ class genericTest extends TestCase
     }
 
     /**
-     * * Same as statics and secondWay, but from deprecated module.
+     * Same as statics and secondWay, but from deprecated module.
      */
     public function testThirdWayRequest()
     {
@@ -311,7 +319,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testArpaRequest4()
     {
         static::assertTrue(
@@ -320,7 +329,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testArpaRequest6()
     {
         static::assertTrue(
@@ -330,7 +340,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testIpType()
     {
         $t4 = Statics::getIpType('127.0.0.1');
@@ -343,7 +354,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testCidrMask()
     {
         $range = (new Address())->getRangeFromMask('127.0.0.240/28');
@@ -351,7 +363,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testArpa()
     {
         static::assertTrue(
@@ -360,7 +373,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testDomain()
     {
         $domainCheck = (new Domain())->getUrlDomain('https://www.aftonbladet.se');
@@ -371,7 +385,8 @@ class genericTest extends TestCase
     }
 
     /**
-     * */
+     * Legacy compatibility regression.
+     */
     public function testGetIpv6FromOctetsCatchException()
     {
         static::expectException(AddressException::class);
