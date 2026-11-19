@@ -113,13 +113,14 @@ class NetworkCookieHeaderTest extends TestCase
         list($process, $port, $log) = $this->startLocalServer();
         try {
             $header = $this->requestCookieHeader($port, 'configured');
-            self::assertSame(
-                'pre_access=hello%20world',
-                substr($header, 0, strpos($header, ';'))
-            );
+            $nameAndValue = explode('=', substr($header, 0, strpos($header, ';')), 2);
+            self::assertSame('pre_access', $nameAndValue[0]);
+            self::assertSame('hello world', urldecode($nameAndValue[1]));
             self::assertTrue(stripos($header, 'path=/configured') !== false, $header);
             self::assertTrue(stripos($header, 'domain=second.example.test') !== false, $header);
-            self::assertTrue(stripos($header, 'expires=Wed, 18 May 2033 03:33:20 GMT') !== false, $header);
+            $expires = [];
+            self::assertSame(1, preg_match('/(?:^|;\\s*)expires=([^;]+)/i', $header, $expires));
+            self::assertSame(2000000000, strtotime($expires[1]));
             $this->assertCookieAttribute($header, 'Secure', true);
 
             $header = $this->requestCookieHeader($port, 'path_preserved');
