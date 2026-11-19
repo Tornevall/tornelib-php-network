@@ -126,6 +126,71 @@ class NetworkAddressTest extends TestCase
         self::assertSame($expected, (new Address())->isIpInRange($address, $cidr));
     }
 
+    public static function ipv6MembershipCases()
+    {
+        return [
+            ['2001:db8::1', '2001:db8::/32', true],
+            ['2001:db9::1', '2001:db8::/32', false],
+            ['2001:db8:abcd:12::1', '2001:db8:abcd::/48', true],
+            ['2001:db8:abce::1', '2001:db8:abcd::/48', false],
+            ['2001:db8::42', '2001:db8::42/128', true],
+            ['2001:db8::43', '2001:db8::42/128', false],
+            ['::1', '::/0', true],
+            ['::1', '::/128', false],
+            ['2001:db8:7fff::1', '2001:db8::/33', true],
+            ['2001:db8:8000::1', '2001:db8::/33', false],
+            ['2001:db8::1', '2001:db8::12/64', true],
+            ['2001:DB8::1', '2001:db8::/32', true],
+            ['192.0.2.10', '2001:db8::/32', false],
+            ['2001:db8::10', '192.0.2.0/24', false],
+            ['::ffff:192.0.2.10', '192.0.2.0/24', false],
+        ];
+    }
+
+    /**
+     * @dataProvider ipv6MembershipCases
+     */
+    public function testIPv6CidrMembershipAndMixedAddressFamilies($address, $cidr, $expected)
+    {
+        self::assertSame($expected, (new Address())->isIpInRange($address, $cidr));
+    }
+
+    public static function invalidIpv6CidrCases()
+    {
+        return [
+            ['2001:db8::1', '2001:db8::/129'],
+            ['2001:db8::1', '2001:db8::/-1'],
+            ['2001:db8::1', '2001:db8::/foo'],
+            ['2001:db8::1', '2001:db8::/'],
+            ['2001:db8::1', '2001:db8::'],
+            ['2001:db8::1', '2001:db8::/128/extra'],
+            ['2001:db8::1', 'bad-host/64'],
+            ['2001:db8::1', '192.0.2.0/64'],
+        ];
+    }
+
+    /**
+     * @dataProvider invalidIpv6CidrCases
+     */
+    public function testInvalidIPv6CidrIsRejected($address, $cidr)
+    {
+        $this->expectException(ExceptionHandler::class);
+        (new Address())->isIpInRange($address, $cidr);
+    }
+
+    public function testInvalidIPv6ClientAddressIsRejected()
+    {
+        $this->expectException(ExceptionHandler::class);
+        (new Address())->isIpInRange('fe80::1%eth0', 'fe80::/10');
+    }
+
+    public function testIPv6MembershipIsAvailableThroughCompatibilityFacades()
+    {
+        self::assertTrue((new \TorneLIB\Module\Network())->isIpInRange('2001:db8::1234', '2001:db8::/32'));
+        self::assertTrue((new \TorneLIB\MODULE_NETWORK())->isIpInRange('2001:db8::1234', '2001:db8::/32'));
+        self::assertFalse(\TorneLIB\Module\Network\Statics::isIpInRange('2001:db9::1', '2001:db8::/32'));
+    }
+
     public function testInvalidMembershipIpIsRejected()
     {
         $this->expectException(ExceptionHandler::class);
