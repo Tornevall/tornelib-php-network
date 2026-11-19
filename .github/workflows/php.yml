@@ -60,3 +60,62 @@ jobs:
           grep -v '^//' resources/public_suffix_list.dat | grep . > "$RUNNER_TEMP/psl-current.rules"
           grep -v '^//' "$RUNNER_TEMP/psl-rebuilt.dat" | grep . > "$RUNNER_TEMP/psl-rebuilt.rules"
           diff -u "$RUNNER_TEMP/psl-current.rules" "$RUNNER_TEMP/psl-rebuilt.rules"
+
+  publish-network-6-1-5:
+    name: Publish network 6.1.5
+    needs: phpunit
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && github.repository == 'Tornevall/tornelib-php-network'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify tested release commit and publish immutable tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION=6.1.5
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          grep -Fqx "## $VERSION - 2026-11-19" CHANGELOG.md
+          if grep -Eq '"version"[[:space:]]*:' composer.json; then
+            echo "Composer library versions must come from Git tags."
+            exit 1
+          fi
+
+          # A green matrix must include six genuinely successful PHP jobs.
+          php_jobs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?per_page=100" --jq '[.jobs[] | select(.name | startswith("PHP "))] | length')"
+          failed_jobs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?per_page=100" --jq '[.jobs[] | select(.name | startswith("PHP ")) | select(.conclusion != "success")] | length')"
+          test "$php_jobs" -eq 6
+          test "$failed_jobs" -eq 0
+
+          if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists; never recreate or move immutable tags."
+            exit 0
+          fi
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$VERSION" >/dev/null 2>&1; then
+            echo "Tag exists without a release. Refusing to retag automatically."
+            exit 1
+          fi
+
+          awk -v heading="## $VERSION - 2026-11-19" '
+            $0 == heading { in_release = 1; next }
+            in_release && /^## / { exit }
+            in_release { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/network-6.1.5-notes.md"
+          test -s "$RUNNER_TEMP/network-6.1.5-notes.md"
+
+          gh release create "$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "tornelib-php-network $VERSION" \
+            --notes-file "$RUNNER_TEMP/network-6.1.5-notes.md" \
+            --latest
+
+          release_commit="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$VERSION" --jq '.object.sha')"
+          test "$release_commit" = "$GITHUB_SHA"
+          gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" --json url,tagName,isDraft,isPrerelease
