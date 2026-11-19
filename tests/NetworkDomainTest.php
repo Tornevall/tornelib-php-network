@@ -98,12 +98,13 @@ class NetworkDomainTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider registrableDomainCases
-     */
-    public function testRegistrableDomainOrEmptyString($host, $expected)
+    public function testRegistrableDomainOrEmptyString()
     {
-        self::assertSame($expected, (new Domain())->getDomainName($host));
+        $domain = new Domain();
+        foreach (self::registrableDomainCases() as $case) {
+            list($host, $expected) = $case;
+            self::assertSame($expected, $domain->getDomainName($host), $host);
+        }
     }
 
     public function testCompletePublicSuffixSnapshotIsBundled()

@@ -17,124 +17,147 @@ use TorneLIB\MODULE_NETWORK;
 class genericTest extends TestCase
 {
     /**
-     * @test Get Proxy data from network client.
+     * Restore all request-global values even when an assertion fails.
+     *
+     * @param array $values
+     * @param callable $run
      */
-    public function getProxyData()
+    private function withServerValues(array $values, callable $run)
     {
-        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
-        $_SERVER['HTTP_VIA'] = '127.0.0.1';
-        static::assertCount(1, (new Network())->getProxyData());
+        $original = $_SERVER;
+        try {
+            foreach ((new \TorneLIB\Module\Network\Proxy())->getProxyHeaders() as $header) {
+                unset($_SERVER[$header]);
+            }
+            foreach ($values as $key => $value) {
+                if ($value === null) {
+                    unset($_SERVER[$key]);
+                } else {
+                    $_SERVER[$key] = $value;
+                }
+            }
+            $run();
+        } finally {
+            $_SERVER = $original;
+        }
     }
 
     /**
-     * @test Get set proxy headers.
+     * Get Proxy data from network client.
      */
-    public function getProxyHeaders()
+    public function testGetProxyData()
+    {
+        $this->withServerValues(
+            ['REMOTE_ADDR' => '127.0.0.1', 'HTTP_VIA' => '127.0.0.1'],
+            function () {
+                static::assertCount(1, (new Network())->getProxyData());
+            }
+        );
+    }
+
+    /**
+     * Get set proxy headers.
+     */
+    public function testGetProxyHeaders()
     {
         static::assertCount(15, (new Network())->getProxyHeaders());
     }
 
     /**
-     * @test
      * What happens when obsolete or removed methods are accessed.
      */
-    public function getObsoleteMethod()
+    public function testGetObsoleteMethod()
     {
-        try {
-            (new Network())->getWhatDoesNotExist();
-        } catch (ExceptionHandler $e) {
-            static::assertTrue(
-                $e->getCode() === Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
-            );
-        }
+        $this->expectException(ExceptionHandler::class);
+        $this->expectExceptionCode(Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE);
+        (new Network())->getWhatDoesNotExist();
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function getDeprecatedMethod()
+    public function testGetDeprecatedMethod()
     {
         static::assertTrue((new Network())->getCurrentServerProtocol(true) === 'http');
     }
 
     /**
-     * @test Test backward compatibility.
+     * Test backward compatibility.
      */
-    public function deprecatedModuleFunc()
+    public function testDeprecatedModuleFunc()
     {
         static::assertCount(15, (new MODULE_NETWORK())->getProxyHeaders());
     }
 
     /**
-     * @test Test backward compatibility.
+     * Test backward compatibility.
      */
-    public function deprecatedModuleVar()
+    public function testDeprecatedModuleVar()
     {
         static::assertTrue((new MODULE_NETWORK())->isDeprecated);
     }
 
     /**
-     * @test Test unexistent variables and backward compatiblity.
+     * Test unexistent variables and backward compatiblity.
      */
-    public function deprecatedUnexistentModuleVar()
+    public function testDeprecatedUnexistentModuleVar()
     {
-        try {
-            (new MODULE_NETWORK())->thisDoesNotExist;
-        } catch (\Exception $e) {
-            static::assertTrue(
-                $e->getCode() === Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE
-            );
-        }
+        $this->expectException(ExceptionHandler::class);
+        $this->expectExceptionCode(Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE);
+        (new MODULE_NETWORK())->thisDoesNotExist;
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function getDeprecatedHttps()
+    public function testGetDeprecatedHttps()
     {
-        $_SERVER['HTTPS'] = true;
-        static::assertTrue((new Network())->isSecureHttp());
-        unset($_SERVER['HTTPS']);
+        $this->withServerValues(['HTTPS' => true], function () {
+            static::assertTrue((new Network())->isSecureHttp());
+        });
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function getIsSecureHttp()
+    public function testGetIsSecureHttp()
     {
-        $_SERVER['HTTPS'] = true;
-        static::assertTrue((new Network())->getIsSecureHttp());
-        unset($_SERVER['HTTPS']);
+        $this->withServerValues(['HTTPS' => true], function () {
+            static::assertTrue((new Network())->getIsSecureHttp());
+        });
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function getProtocol()
+    public function testGetProtocol()
     {
-        static::assertTrue((new Network())->getProtocol() === 'http');
+        $this->withServerValues(['HTTPS' => null], function () {
+            static::assertSame('http', (new Network())->getProtocol());
+        });
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function getHttpHost()
+    public function testGetHttpHost()
     {
-        static::assertTrue((new Network())->getHttpHost() === 'localhost');
+        $this->withServerValues(['HTTP_HOST' => null], function () {
+            static::assertSame('localhost', (new Network())->getHttpHost());
+        });
     }
 
     /**
      * Convert snakecases to camelcase.
      *
-     * @test
-     */
-    public function getCamelCased()
+     * */
+    public function testGetCamelCased()
     {
         static::assertTrue(Strings::returnCamelCase('base64url_encode') === "base64urlEncode");
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
     public function testDeprecatedSnakes()
     {
@@ -143,10 +166,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
      * @throws \TorneLIB\Exception\ExceptionHandler
      */
-    public function getGitTagsNetcurl()
+    public function testGetGitTagsNetcurl()
     {
         if (getenv('TORNELIB_NETWORK_LIVE_TESTS') !== '1') {
             static::markTestSkipped('Live network test disabled; set TORNELIB_NETWORK_LIVE_TESTS=1 to opt in.');
@@ -164,9 +186,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function getGitTagsNetcurlBucket()
+    public function testGetGitTagsNetcurlBucket()
     {
         if (getenv('TORNELIB_NETWORK_LIVE_TESTS') !== '1') {
             static::markTestSkipped('Live network test disabled; set TORNELIB_NETWORK_LIVE_TESTS=1 to opt in.');
@@ -183,10 +205,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
      * @throws ExceptionHandler
      */
-    public function getGitOldUtil()
+    public function testGetGitOldUtil()
     {
         if (getenv('TORNELIB_NETWORK_LIVE_TESTS') !== '1') {
             static::markTestSkipped('Live network test disabled; set TORNELIB_NETWORK_LIVE_TESTS=1 to opt in.');
@@ -204,10 +225,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
      * @throws ExceptionHandler
      */
-    public function getUrlDomain()
+    public function testGetUrlDomain()
     {
         $response = (new Domain())->getUrlDomain(
             'https://www.aftonbladet.se'
@@ -217,10 +237,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
      * @throws ExceptionHandler
      */
-    public function getUrlDomainException()
+    public function testGetUrlDomainException()
     {
         static::expectException(DomainException::class);
 
@@ -231,9 +250,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function getUrlsFromHtml()
+    public function testGetUrlsFromHtml()
     {
         $html = '<html>
 			<a href="http://test.com/url1">URL 1</a>
@@ -260,10 +279,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
      * @throws Exception
      */
-    public function getDomainName()
+    public function testGetDomainName()
     {
         static::assertTrue(
             (new Domain())->getDomainName('https://www.aftonbladet.se/artikel/hej/hopp') === 'aftonbladet.se'
@@ -271,10 +289,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
      * Test if some of the internal requests are reachable from the static caller. Backward compatible.
      */
-    public function staticInternal()
+    public function testStaticInternal()
     {
         static::assertTrue(
             Statics::getArpaFromIpv4('127.0.0.1') === '1.0.0.127'
@@ -282,10 +299,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
      * Same as statics above but from Network directly.
      */
-    public function secondWayRequest()
+    public function testSecondWayRequest()
     {
         static::assertTrue(
             (new Network())->getArpaFromIpv4('127.0.0.1') === '1.0.0.127'
@@ -293,10 +309,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
      * Same as statics and secondWay, but from deprecated module.
      */
-    public function thirdWayRequest()
+    public function testThirdWayRequest()
     {
         static::assertTrue(
             (new MODULE_NETWORK())->getArpaFromIpv4('127.0.0.1') === '1.0.0.127'
@@ -304,9 +319,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function arpaRequest4()
+    public function testArpaRequest4()
     {
         static::assertTrue(
             (new Network())->getArpa('212.63.208.1') === '1.208.63.212'
@@ -314,9 +329,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function arpaRequest6()
+    public function testArpaRequest6()
     {
         static::assertTrue(
             (new Network())->getArpa('2a01:299:a0:ff:ff:ff:ff:ff') ===
@@ -325,9 +340,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function ipType()
+    public function testIpType()
     {
         $t4 = Statics::getIpType('127.0.0.1');
         $t6 = Statics::getIpType('::ff');
@@ -339,18 +354,18 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function cidrMask()
+    public function testCidrMask()
     {
         $range = (new Address())->getRangeFromMask('127.0.0.240/28');
         static::assertCount(16, $range);
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function arpa()
+    public function testArpa()
     {
         static::assertTrue(
             (new Address())->getArpa('127.0.0.1') === '1.0.0.127'
@@ -358,9 +373,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function domain()
+    public function testDomain()
     {
         $domainCheck = (new Domain())->getUrlDomain('https://www.aftonbladet.se');
         static::assertTrue(
@@ -370,9 +385,9 @@ class genericTest extends TestCase
     }
 
     /**
-     * @test
+     * Legacy compatibility regression.
      */
-    public function getIpv6FromOctetsCatchException()
+    public function testGetIpv6FromOctetsCatchException()
     {
         static::expectException(AddressException::class);
         (new Address())->getIpv6FromOctets('korv');

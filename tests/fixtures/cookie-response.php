@@ -82,6 +82,38 @@ switch ($scenario) {
         $_SERVER['HTTP_HOST'] = '[::1]:8443';
         break;
 
+    case 'public_suffix_co_uk':
+        $_SERVER['HTTP_HOST'] = 'co.uk';
+        break;
+
+    case 'public_suffix_github_io':
+        $_SERVER['HTTP_HOST'] = 'github.io';
+        break;
+
+    case 'private_domain':
+        $_SERVER['HTTP_HOST'] = 'alice.github.io';
+        break;
+
+    case 'malformed_host':
+        $_SERVER['HTTP_HOST'] = 'example.test/path';
+        break;
+
+    case 'changing_request':
+        header('Content-Type: text/plain');
+        $_SERVER['HTTP_HOST'] = 'first.example.test';
+        $_SERVER['HTTPS'] = 'on';
+        $cookie->setCookie('first', 'one', $expires);
+
+        $_SERVER['HTTP_HOST'] = 'co.uk';
+        $_SERVER['HTTPS'] = 'off';
+        $cookie->setCookie('second', 'two', $expires);
+
+        $_SERVER['HTTP_HOST'] = 'second.example.test';
+        $_SERVER['HTTPS'] = 'on';
+        $cookie->setCookie('third', 'three', $expires);
+        echo 'OK';
+        exit;
+
     case 'default_expiry':
         $expires = '';
         break;

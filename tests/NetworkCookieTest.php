@@ -92,6 +92,95 @@ class NetworkCookieTest extends TestCase
         }
     }
 
+    public function testAutomaticDomainRejectsPublicSuffixAndMalformedHosts()
+    {
+        $cases = [
+            ['co.uk', ''],
+            ['github.io', ''],
+            ['alice.github.io', '.alice.github.io'],
+            ['www.example.co.uk:8443', '.www.example.co.uk'],
+            ['shop.example.test', '.shop.example.test'],
+            ['invalid host.test', ''],
+            ['example.test/path', ''],
+            ['user@example.test', ''],
+            ['example.test..', ''],
+            ['example.test?query=yes', ''],
+            ["example.test\r\nX-Forged: y", ''],
+        ];
+
+        foreach ($cases as $case) {
+            $this->withServerValues(['HTTP_HOST' => $case[0]], function () use ($case) {
+                $cookie = new Cookie();
+                $cookie->setCookieParameters();
+                self::assertSame($case[1], $cookie->getCookieDefaultDomain(), $case[0]);
+            });
+        }
+    }
+
+    public function testAutomaticallyDerivedSettingsFollowCurrentRequest()
+    {
+        $original = $_SERVER;
+        try {
+            $_SERVER['HTTP_HOST'] = 'first.example.test';
+            $_SERVER['HTTPS'] = 'on';
+            $cookie = new Cookie();
+            $cookie->setCookieDefaultPath('/preserved');
+            $cookie->setCookieParameters($cookie->getCookieDefaultPath());
+            self::assertSame('.first.example.test', $cookie->getCookieDefaultDomain());
+            self::assertTrue($cookie->isCookieUseSecure());
+
+            $_SERVER['HTTP_HOST'] = 'co.uk';
+            $_SERVER['HTTPS'] = 'off';
+            $cookie->setCookieParameters($cookie->getCookieDefaultPath());
+            self::assertSame('', $cookie->getCookieDefaultDomain());
+            self::assertFalse($cookie->isCookieUseSecure());
+            self::assertSame('/preserved', $cookie->getCookieDefaultPath());
+
+            $_SERVER['HTTP_HOST'] = 'second.example.test';
+            $_SERVER['HTTPS'] = 'on';
+            $cookie->setCookieParameters($cookie->getCookieDefaultPath());
+            self::assertSame('.second.example.test', $cookie->getCookieDefaultDomain());
+            self::assertTrue($cookie->isCookieUseSecure());
+        } finally {
+            $_SERVER = $original;
+        }
+    }
+
+    public function testExplicitCookieSettingsStayFixedAcrossRequests()
+    {
+        $original = $_SERVER;
+        try {
+            $_SERVER['HTTP_HOST'] = 'first.example.test';
+            $_SERVER['HTTPS'] = 'on';
+            $cookie = new Cookie();
+            $cookie->setCookieParameters('/explicit', 'pre_', 'allowed.example.test', false);
+
+            $_SERVER['HTTP_HOST'] = 'second.example.test';
+            $_SERVER['HTTPS'] = 'off';
+            $cookie->setCookieParameters('/explicit');
+            self::assertSame('/explicit', $cookie->getCookieDefaultPath());
+            self::assertSame('pre_', $cookie->getCookieDefaultPrefix());
+            self::assertSame('allowed.example.test', $cookie->getCookieDefaultDomain());
+            self::assertFalse($cookie->isCookieUseSecure());
+        } finally {
+            $_SERVER = $original;
+        }
+    }
+
+    public function testResettingExplicitDomainReenablesSafeAutomaticInference()
+    {
+        $this->withServerValues(['HTTP_HOST' => 'github.io'], function () {
+            $cookie = new Cookie();
+            $cookie->setCookieDefaultDomain('explicit.example.test');
+            $cookie->setCookieParameters();
+            self::assertSame('explicit.example.test', $cookie->getCookieDefaultDomain());
+
+            $cookie->setCookieDefaultDomain(null);
+            $cookie->setCookieParameters();
+            self::assertSame('', $cookie->getCookieDefaultDomain());
+        });
+    }
+
     public function testSecureFlagRecognizesNormalHttpsServerValue()
     {
         $this->withServerValues(['HTTPS' => 'on', 'HTTP_HOST' => 'example.test'], function () {

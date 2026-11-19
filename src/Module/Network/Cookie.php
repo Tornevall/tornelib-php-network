@@ -11,6 +11,7 @@ class Cookie
 {
     private $cookieDefaultPath = '/';
     private $cookieDefaultDomain;
+    private $cookieDomainExplicit = false;
     private $cookieUseSecure;
     private $cookieDefaultPrefix;
     private $cookieTrustedProxies = [];
@@ -26,14 +27,14 @@ class Cookie
      */
     public function setCookie($name = '', $value = '', $expire = '')
     {
-        if ($this->cookieDefaultDomain === null || $this->cookieUseSecure === null) {
-            $this->setCookieParameters(
-                $this->cookieDefaultPath,
-                $this->cookieDefaultPrefix,
-                $this->cookieDefaultDomain,
-                $this->cookieSecureExplicit ? $this->cookieUseSecure : null
-            );
-        }
+        // Automatically inferred settings must follow the current request,
+        // while explicitly configured values remain persistent.
+        $this->setCookieParameters(
+            $this->cookieDefaultPath,
+            $this->cookieDefaultPrefix,
+            $this->cookieDomainExplicit ? $this->cookieDefaultDomain : null,
+            $this->cookieSecureExplicit ? $this->cookieUseSecure : null
+        );
 
         if ($expire === '') {
             $expire = time() + 86400;
@@ -56,6 +57,51 @@ class Cookie
     }
 
     /**
+     * Derive a cookie domain only for valid, registrable DNS hostnames.
+     * A public suffix, malformed Host header or IP literal must instead
+     * produce a host-only cookie with no Domain attribute.
+     *
+     * @return string
+     */
+    private function getAutomaticCookieDomain(): string
+    {
+        $header = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+        if (!is_string($header) || $header === '' ||
+            preg_match('/[\x00-\x20\x7f\/@?#]/', $header)
+        ) {
+            return '';
+        }
+
+        $parsed = parse_url('http://' . $header);
+        if (!is_array($parsed) || !isset($parsed['host']) ||
+            isset($parsed['user']) || isset($parsed['pass']) ||
+            isset($parsed['path']) || isset($parsed['query']) ||
+            isset($parsed['fragment'])
+        ) {
+            return '';
+        }
+
+        $host = strtolower($parsed['host']);
+        if (strpos($host, '..') !== false) {
+            return '';
+        }
+        if (substr($host, -1) === '.') {
+            $host = substr($host, 0, -1);
+        }
+
+        if (filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false ||
+            filter_var(trim($host, '[]'), FILTER_VALIDATE_IP) !== false ||
+            strpos($host, '.') === false
+        ) {
+            return '';
+        }
+
+        // The PSL contains private suffixes, so github.io and co.uk are
+        // not valid scopes, whereas alice.github.io and example.co.uk are.
+        return (new Domain())->getDomainName($host) === '' ? '' : '.' . $host;
+    }
+
+    /**
      * Set or refresh cookie defaults. A null domain preserves an existing one
      * or derives a safe default from HTTP_HOST.
      *
@@ -71,24 +117,13 @@ class Cookie
 
         if ($domain !== null) {
             $this->cookieDefaultDomain = $domain;
-        } elseif ($this->cookieDefaultDomain === null) {
-            $httpHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
-            $parsedHost = parse_url('http://' . $httpHost, PHP_URL_HOST);
-            $host = is_string($parsedHost) ? strtolower(rtrim($parsedHost, '.')) : '';
-
-            if (filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) !== false &&
-                filter_var(trim($host, '[]'), FILTER_VALIDATE_IP) === false &&
-                strpos($host, '.') !== false
-            ) {
-                $this->cookieDefaultDomain = '.' . $host;
-            } else {
-                // An empty Domain attribute produces a host-only cookie.
-                $this->cookieDefaultDomain = '';
-            }
+            $this->cookieDomainExplicit = true;
+        } elseif (!$this->cookieDomainExplicit) {
+            $this->cookieDefaultDomain = $this->getAutomaticCookieDomain();
         }
 
         if ($secure === null) {
-            if ($this->cookieUseSecure === null) {
+            if (!$this->cookieSecureExplicit) {
                 $this->cookieUseSecure = Statics::getCurrentServerProtocol(
                     false,
                     $this->cookieTrustedProxies
@@ -125,6 +160,7 @@ class Cookie
     public function setCookieDefaultDomain($cookieDefaultDomain)
     {
         $this->cookieDefaultDomain = $cookieDefaultDomain;
+        $this->cookieDomainExplicit = $cookieDefaultDomain !== null;
         return $this;
     }
 
