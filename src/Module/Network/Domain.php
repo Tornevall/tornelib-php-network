@@ -224,6 +224,10 @@ class Domain
     private function normalizeDomainHost(string $host): string
     {
         $host = strtolower($host);
+        if (strpos($host, '..') !== false) {
+            return '';
+        }
+
         if (substr($host, -1) === '.') {
             $host = substr($host, 0, -1);
         }
