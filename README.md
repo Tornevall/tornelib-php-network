@@ -1,12 +1,37 @@
 # tornevall/tornelib-php-network
 
-## A prior part of tornevall/tornelib-php-netcurl
+## A former part of tornevall/tornelib-php-netcurl
 
-Network 6.1.x is an extraction and refactored module that recently was deployed with the netcurl package. The breakout has been made, mainly to make it easier to maintain network functions without destroying functions in netcurl, when it's not necessary.
+Network 6.1.x extracts network utility functions from NetCurl so they can be maintained independently of the HTTP transport. The library provides IP and CIDR helpers, DNS/domain utilities, proxy header inspection, HTTPS detection, cookie configuration and compatibility facades.
 
-The module contains - mostly - action points that don't necessarily needs the communication parts from netcurl.
+## Requirements
 
-# Requirements
+PHP 7.0 or newer, matching `composer.json`. The supported compatibility surface is maintained by testing both legacy and current public entry points.
 
-PHP 5.5 or higher.
-It might work in lower versions, but since the test suites no longer accept 5.4 this is not officiall supported either.
+## Testing
+
+Install dependencies with Composer, and run PHPUnit using a version compatible with your PHP runtime:
+
+```sh
+composer install
+phpunit --configuration phpunit.xml
+```
+
+The default suite runs deterministically without external DNS or live network services. Three legacy Git tag integration tests are retained but skipped unless you explicitly opt in:
+
+```sh
+TORNELIB_NETWORK_LIVE_TESTS=1 phpunit --configuration phpunit.xml
+```
+
+Live tests require the external Git hosts and associated NetCurl utilities to be available.
+
+### Security and compatibility notes
+
+- The `Proxy` class returns raw request header values; forwarded headers are untrusted unless the application independently verifies its reverse proxy.
+- `isIpInRange` accepts IPv4 and IPv6 CIDRs (`/0` to `/32` and `/0` to `/128` respectively), rejecting invalid input with a library exception and returning `false` for valid mixed-family comparisons. IPv4-mapped IPv6 addresses are treated as IPv6, not coerced into IPv4.
+- PHP 8.6 is included in CI as an experimental compatibility probe while the first stable release is being published. It is not yet a separately guaranteed runtime.
+- `getRangeFromMask` returns *all* addresses in a small IPv4 range, including first and last addresses. Ranges above 65536 addresses are rejected to avoid unbounded memory allocation.
+- `Domain::getDomainName` uses the complete bundled Public Suffix List (PSL) snapshot, including ICANN and PRIVATE domains, wildcard rules and exception rules, to return the registrable domain (eTLD+1). `www.example.co.uk` returns `example.co.uk`, `a.www.ck` returns `www.ck`, and `one.alice.github.io` returns `alice.github.io`. A public suffix itself, a single-label host, an IP address or an invalid hostname returns `''`. For unknown TLDs, the PSL's implicit `*` rule applies.
+- PSL domain output is lowercase ASCII/Punycode. Internationalized Unicode hostnames require the optional PHP `ext-intl` extension (UTS46 IDNA). Without it, Unicode input fails closed with `''`; ASCII and Punycode hostnames continue working. Never use eTLD+1 alone as an authorization or cookie-domain trust decision.
+- The bundled `resources/public_suffix_list.dat` is an offline, generated PSL snapshot under the Mozilla Public License 2.0. To refresh its ICANN and PRIVATE rules from the canonical upstream endpoint, run `php bin/update-public-suffix-list.php` in a PHP CLI with `ext-intl` and outbound HTTPS. Review and commit the regenerated snapshot. Production lookups never require network access.
+- `MODULE_NETWORK` remains the legacy entry point and delegates to `Module\Network`.

@@ -22,31 +22,10 @@ abstract class Statics
      */
     public static function getCurrentServerProtocol(bool $returnProtocol = false)
     {
-        if (isset($_SERVER['HTTPS'])) {
-            if ($_SERVER['HTTPS'] == "on") {
-                if (!$returnProtocol) {
-                    $return = true;
-                } else {
-                    $return = "https";
-                }
-            } else {
-                if (!$returnProtocol) {
-                    $return = false;
-                } else {
-                    $return = "http";
-                }
-            }
+        $https = isset($_SERVER['HTTPS']) ? strtolower((string) $_SERVER['HTTPS']) : '';
+        $isSecure = in_array($https, ['on', '1', 'true'], true);
 
-            return $return;
-        }
-
-        if (!$returnProtocol) {
-            $return = false;
-        } else {
-            $return = "http";
-        }
-
-        return $return;
+        return $returnProtocol ? ($isSecure ? 'https' : 'http') : $isSecure;
     }
 
     /**

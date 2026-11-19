@@ -148,6 +148,10 @@ class genericTest extends TestCase
      */
     public function getGitTagsNetcurl()
     {
+        if (getenv('TORNELIB_NETWORK_LIVE_TESTS') !== '1') {
+            static::markTestSkipped('Live network test disabled; set TORNELIB_NETWORK_LIVE_TESTS=1 to opt in.');
+        }
+
         if (!class_exists('TorneLIB\Helpers\NetUtils')) {
             static::markTestSkipped('TorneLIB\Helpers\NetUtils unavailable');
             return;
@@ -164,6 +168,10 @@ class genericTest extends TestCase
      */
     public function getGitTagsNetcurlBucket()
     {
+        if (getenv('TORNELIB_NETWORK_LIVE_TESTS') !== '1') {
+            static::markTestSkipped('Live network test disabled; set TORNELIB_NETWORK_LIVE_TESTS=1 to opt in.');
+        }
+
         if (!class_exists('TorneLIB\Helpers\NetUtils')) {
             static::markTestSkipped('TorneLIB\Helpers\NetUtils unavailable');
             return;
@@ -180,6 +188,10 @@ class genericTest extends TestCase
      */
     public function getGitOldUtil()
     {
+        if (getenv('TORNELIB_NETWORK_LIVE_TESTS') !== '1') {
+            static::markTestSkipped('Live network test disabled; set TORNELIB_NETWORK_LIVE_TESTS=1 to opt in.');
+        }
+
         if (!class_exists('TorneLIB\Helpers\NetUtils')) {
             static::markTestSkipped('TorneLIB\Helpers\NetUtils unavailable');
             return;
@@ -332,7 +344,7 @@ class genericTest extends TestCase
     public function cidrMask()
     {
         $range = (new Address())->getRangeFromMask('127.0.0.240/28');
-        static::assertCount(15, $range);
+        static::assertCount(16, $range);
     }
 
     /**

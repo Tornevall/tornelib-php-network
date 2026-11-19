@@ -4,173 +4,132 @@ namespace TorneLIB\Module\Network;
 
 use Exception;
 use TorneLIB\Exception\Constants;
-use TorneLIB\Exception\ExceptionHandler;
 use TorneLIB\Module\Exception\DomainException;
 
 /**
- * Class Address Internet addressing handler.
+ * Internet domain, URL extraction and redirect helpers.
  *
- * @package TorneLIB\Module\Network
  * @version 6.1.5
  */
 class Domain
 {
     /**
-     * @var
-     * @since 6.1.5
+     * Parsed local PSL snapshot shared across Domain instances for this process.
+     *
+     * @var array|null
      */
-    private $domainExceptionHandler;
+    private static $publicSuffixRules;
 
     /**
-     * @var
-     * @since 6.1.5
+     * Resolve DNS entries; override in deterministic tests or custom deployments.
+     *
+     * @param string $hostname
+     * @return array|false
      */
-    private $domainException;
-
-    /**
-     * @throws ExceptionHandler
-     */
-    private function getNetworkErrorHandler()
+    protected function resolveDnsRecords(string $hostname)
     {
-        $this->domainExceptionHandler = set_error_handler(function ($errNo, $errStr) {
-            if (empty($this->stremWarningException['string'])) {
-                $this->domainException['code'] = $errNo;
-                $this->domainException['string'] = $errStr;
-            }
-            restore_error_handler();
-            throw new DomainException($errStr, $errNo);
-        }, E_WARNING);
+        return @dns_get_record($hostname, DNS_ANY);
     }
 
-    /**
-     * Validate if hostname in domain exists in DNS entries.
-     *
-     * @param string $urlParsedHost
-     * @param string $urlParsed
-     * @throws ExceptionHandler
-     * @noinspection PhpIllegalStringOffsetInspection
-     */
-    private function getUrlDomainValidatedHost(string $urlParsedHost, string $urlParsed)
+    private function getUrlDomainValidatedHost(string $requestedUrl, $parsed)
     {
-        $this->getNetworkErrorHandler();
-
-        // Make sure that the host is not invalid
-        if (isset($urlParsed['host']) && filter_var($urlParsedHost, FILTER_VALIDATE_URL)) {
-            $hostRecord = dns_get_record($urlParsed['host'], DNS_ANY);
-            restore_error_handler();
-            if (!count($hostRecord)) {
-                throw new DomainException(
-                    sprintf(
-                        'Host validation for "%s" in %s failed.',
-                        $urlParsedHost,
-                        __FUNCTION__
-                    ),
-                    Constants::LIB_NETCURL_DOMAIN_OR_HOST_VALIDATION_FAILURE
-                );
-            }
-        } else {
+        if (!is_array($parsed) ||
+            empty($parsed['host']) ||
+            filter_var($requestedUrl, FILTER_VALIDATE_URL) === false ||
+            filter_var($parsed['host'], FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false
+        ) {
             throw new DomainException(
-                sprintf(
-                    'Host validation for "%s" in %s failed.',
-                    $urlParsedHost,
-                    __FUNCTION__
-                ),
+                sprintf('Host validation for "%s" in %s failed.', $requestedUrl, __FUNCTION__),
+                Constants::LIB_NETCURL_DOMAIN_OR_HOST_VALIDATION_FAILURE
+            );
+        }
+
+        $records = $this->resolveDnsRecords($parsed['host']);
+        if (!is_array($records) || count($records) === 0) {
+            throw new DomainException(
+                sprintf('Host validation for "%s" in %s failed.', $requestedUrl, __FUNCTION__),
                 Constants::LIB_NETCURL_DOMAIN_OR_HOST_VALIDATION_FAILURE
             );
         }
     }
 
     /**
-     * @param $stringWithUrls
+     * Extract unique quoted absolute URLs matching the requested schemes.
+     * Legacy 'http' matches both http and https.
+     *
+     * @param string $html
      * @param array $protocols
      * @return array
      */
-    private function getUrlsByProtocol($stringWithUrls, $protocols = ['http'])
+    private function getUrlsByProtocol($html, $protocols = ['http'])
     {
-        $return = [];
-        foreach ($protocols as $protocol) {
-            $regex = "@[\"|\']$protocol(.*?)[\"|\']@is";
-            preg_match_all($regex, $stringWithUrls, $matches);
-            $urls = [];
-            if (isset($matches[1]) && count($matches[1])) {
-                $urls = $matches[1];
-            }
-            if (count($urls)) {
-                foreach ($urls as $url) {
-                    $trimUrl = trim($url);
-                    if (!empty($trimUrl)) {
-                        $prependUrl = $protocol . $url;
-                        if (!in_array($prependUrl, $return)) {
-                            $return[] = $prependUrl;
-                        }
-                    }
-                }
+        $allowedProtocols = array_map('strtolower', $protocols);
+        if (in_array('http', $allowedProtocols, true) &&
+            !in_array('https', $allowedProtocols, true)
+        ) {
+            $allowedProtocols[] = 'https';
+        }
+
+        $urls = [];
+        preg_match_all('~(["\x27])([a-z][a-z0-9+.-]*:[^"\x27]*?)\1~i', $html, $matches);
+        foreach ($matches[2] as $url) {
+            $scheme = parse_url($url, PHP_URL_SCHEME);
+            if (is_string($scheme) &&
+                in_array(strtolower($scheme), $allowedProtocols, true) &&
+                !in_array($url, $urls, true)
+            ) {
+                $urls[] = $url;
             }
         }
 
-        return $return;
+        return $urls;
     }
 
     /**
-     * @param $returnArray
-     * @param $offset
-     * @param $urlLimit
+     * Apply offset and limit independently, including for the default offset.
+     *
+     * @param array $urls
+     * @param int $offset
+     * @param int $limit
      * @return array
      */
-    private function getUrlsByOffset($returnArray, $offset, $urlLimit)
+    private function getUrlsByOffset($urls, $offset, $limit)
     {
-        $return = $returnArray;
-
-        if (count($returnArray) && $offset > -1 && $offset <= $returnArray) {
-            $allowedOffset = 0;
-            $returnNewArray = [];
-            $urlCount = 0;
-            for ($offsetIndex = 0; $offsetIndex < count($returnArray); $offsetIndex++) {
-                if ($offsetIndex == $offset) {
-                    $allowedOffset = true;
-                }
-                if ($allowedOffset) {
-                    // Break when requested limit has beenreached
-                    $urlCount++;
-                    if ($urlLimit > -1 && $urlCount > $urlLimit) {
-                        break;
-                    }
-                    $returnNewArray[] = $returnArray[$offsetIndex];
-                }
-            }
-            $return = $returnNewArray;
+        $start = $offset < 0 ? 0 : $offset;
+        if ($start >= count($urls) || $limit === 0) {
+            return [];
         }
 
-        return $return;
+        return array_slice($urls, $start, $limit < 0 ? null : $limit);
     }
 
-
     /**
-     * Returns minimalistic parsed info about a hostname or url.
+     * Returns minimal parsed information about a hostname or URL.
      *
      * @param string $requestedUrlHost
      * @param bool $validateHost
      * @return array
-     * @throws ExceptionHandler
+     * @throws DomainException
      */
     public function getUrlDomain($requestedUrlHost = '', $validateHost = false): array
     {
-        // If the scheme is forgotten, add it to keep normal hosts validatable too.
-        if (!preg_match("/\:\/\//", $requestedUrlHost)) {
-            $requestedUrlHost = sprintf(
-                'http://%s',
-                $requestedUrlHost
-            );
+        if (strpos($requestedUrlHost, '://') === false) {
+            $requestedUrlHost = 'http://' . $requestedUrlHost;
         }
-        $urlParsed = parse_url($requestedUrlHost);
+
+        $parsed = parse_url($requestedUrlHost);
         if ($validateHost) {
-            $this->getUrlDomainValidatedHost($requestedUrlHost, $urlParsed);
+            $this->getUrlDomainValidatedHost($requestedUrlHost, $parsed);
+        }
+
+        if (!is_array($parsed)) {
+            return [null, null, null];
         }
 
         return [
-            isset($urlParsed['host']) ? $urlParsed['host'] : null,
-            isset($urlParsed['scheme']) ? $urlParsed['scheme'] : null,
-            isset($urlParsed['path']) ? $urlParsed['path'] : null,
+            isset($parsed['host']) ? $parsed['host'] : null,
+            isset($parsed['scheme']) ? $parsed['scheme'] : null,
+            isset($parsed['path']) ? $parsed['path'] : null,
         ];
     }
 
@@ -180,7 +139,6 @@ class Domain
      * @param int $urlLimit
      * @param array $protocols
      * @return array
-     * @since 5.0.0
      */
     public function getUrlsFromHtml(
         string $stringWithUrls,
@@ -188,53 +146,182 @@ class Domain
         int $urlLimit = -1,
         array $protocols = ['http']
     ): array {
-        $urlList = $this->getUrlsByProtocol($stringWithUrls, $protocols);
-
-        return $this->getUrlsByOffset($urlList, $offset, $urlLimit);
+        return $this->getUrlsByOffset(
+            $this->getUrlsByProtocol($stringWithUrls, $protocols),
+            $offset,
+            $urlLimit
+        );
     }
 
     /**
-     * Extract domain name (zone name) from hostname
+     * Load the complete local PSL snapshot, including ICANN and PRIVATE rules.
+     * Absence or damage is an error; silently guessing is unsafe for cookies.
      *
-     * @param string $hostname Alternative hostname than the HTTP_HOST
+     * @return array
+     * @throws DomainException
+     */
+    private function getPublicSuffixRules(): array
+    {
+        if (self::$publicSuffixRules !== null) {
+            return self::$publicSuffixRules;
+        }
+
+        $file = __DIR__ . '/../../../resources/public_suffix_list.dat';
+        if (!is_readable($file)) {
+            throw new DomainException('The Public Suffix List snapshot is unavailable.');
+        }
+
+        $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (!is_array($lines)) {
+            throw new DomainException('The Public Suffix List snapshot cannot be read.');
+        }
+
+        $rules = ['exact' => [], 'wildcard' => [], 'exception' => []];
+        $sawIcann = false;
+        $sawPrivate = false;
+        $sawEnd = false;
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '// ===BEGIN ICANN DOMAINS===') {
+                $sawIcann = true;
+            } elseif ($line === '// ===BEGIN PRIVATE DOMAINS===') {
+                $sawPrivate = true;
+            } elseif ($line === '// ===END PRIVATE DOMAINS===') {
+                $sawEnd = true;
+            }
+
+            if ($line === '' || strpos($line, '//') === 0) {
+                continue;
+            }
+
+            if ($line[0] === '!') {
+                $rules['exception'][substr($line, 1)] = true;
+            } elseif (strpos($line, '*.') === 0) {
+                $rules['wildcard'][substr($line, 2)] = true;
+            } else {
+                $rules['exact'][$line] = true;
+            }
+        }
+
+        if (!$sawIcann || !$sawPrivate || !$sawEnd ||
+            count($rules['exact']) + count($rules['wildcard']) + count($rules['exception']) < 1000
+        ) {
+            throw new DomainException('The Public Suffix List snapshot is incomplete.');
+        }
+
+        self::$publicSuffixRules = $rules;
+
+        return self::$publicSuffixRules;
+    }
+
+    /**
+     * Normalize a hostname for PSL matching. ASCII and Punycode hosts work
+     * without ext-intl; Unicode hostnames require ext-intl's IDNA support.
+     *
+     * @param string $host
      * @return string
-     * @throws Exception
-     * @since 5.0.0
+     */
+    private function normalizeDomainHost(string $host): string
+    {
+        $host = strtolower($host);
+
+        if (preg_match('/[^\x00-\x7f]/', $host)) {
+            if (!function_exists('idn_to_ascii')) {
+                return '';
+            }
+            $host = idn_to_ascii(
+                $host,
+                IDNA_NONTRANSITIONAL_TO_ASCII,
+                INTL_IDNA_VARIANT_UTS46
+            );
+            if (!is_string($host)) {
+                return '';
+            }
+            $host = strtolower($host);
+        }
+
+        // UTS46 may transform Unicode full-stop variants into ASCII dots.
+        // Remove an optional DNS root separator only after normalization.
+        if (strpos($host, '..') !== false) {
+            return '';
+        }
+        if (substr($host, -1) === '.') {
+            $host = substr($host, 0, -1);
+        }
+
+        if ($host === '' || strlen($host) > 253 ||
+            filter_var(trim($host, '[]'), FILTER_VALIDATE_IP) !== false ||
+            filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false
+        ) {
+            return '';
+        }
+
+        return $host;
+    }
+
+    /**
+     * Resolve a registrable domain (eTLD+1) using the official Public Suffix
+     * List rule algorithm, including wildcard, exception and private rules.
+     * Public suffixes, IP literals, invalid hosts and single-label hosts
+     * return the empty string; IDNs are returned in ASCII/Punycode form.
+     *
+     * @param string $hostname URL or hostname, or '' to read HTTP_HOST
+     * @return string
+     * @throws DomainException If the local PSL data is missing or corrupted
      */
     public function getDomainName(string $hostname): string
     {
-        $return = null;
-        $currentHost = "";
-        if (empty($hostname)) {
-            if (isset($_SERVER['HTTP_HOST'])) {
-                $currentHost = $_SERVER['HTTP_HOST'];
-            }
-        } else {
-            $extractHost = $this->getUrlDomain($hostname);
-            $currentHost = $extractHost[0];
+        $input = $hostname === '' ?
+            (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '') : $hostname;
+        $parsed = $this->getUrlDomain($input);
+        $host = is_string($parsed[0]) ? $this->normalizeDomainHost($parsed[0]) : '';
+        if ($host === '') {
+            return '';
         }
-        // Do this, only if it's a real domain (if scripts are running from console, there might be a loss of this
-        // hostname (or if it is a single name, like localhost).
-        if (!empty($currentHost) && preg_match("/\./", $currentHost)) {
-            $thisDomainArray = explode(".", $currentHost);
-            if (is_array($thisDomainArray)) {
-                $return = sprintf(
-                    '%s.%s',
-                    $thisDomainArray[count($thisDomainArray) - 2],
-                    $thisDomainArray[count($thisDomainArray) - 1]
-                );
+
+        $labels = explode('.', $host);
+        $labelCount = count($labels);
+        if ($labelCount < 2) {
+            return '';
+        }
+
+        $rules = $this->getPublicSuffixRules();
+        $suffixLength = 1; // PSL prevailing implicit '*' rule
+
+        for ($i = 0; $i < $labelCount; $i++) {
+            $suffix = implode('.', array_slice($labels, $i));
+            $matchedLabels = $labelCount - $i;
+
+            if (isset($rules['exception'][$suffix])) {
+                // An exception always wins; exclude its leftmost label.
+                $suffixLength = $matchedLabels - 1;
+                break;
+            }
+
+            if (isset($rules['exact'][$suffix]) && $matchedLabels > $suffixLength) {
+                $suffixLength = $matchedLabels;
+            }
+
+            if ($i > 0 && isset($rules['wildcard'][$suffix]) &&
+                $matchedLabels + 1 > $suffixLength
+            ) {
+                $suffixLength = $matchedLabels + 1;
             }
         }
 
-        return $return;
+        if ($labelCount <= $suffixLength) {
+            return '';
+        }
+
+        return implode('.', array_slice($labels, -($suffixLength + 1)));
     }
 
     /**
-     * Redirect helper.
+     * Redirect helper. This method retains the legacy exit behavior.
+     *
      * @param string $redirectToUrl
      * @param bool $replaceHeader
      * @param int $responseCode
-     * @since 5.0.0
      */
     public function redirect(string $redirectToUrl = '', bool $replaceHeader = false, int $responseCode = 301)
     {

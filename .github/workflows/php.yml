@@ -1,74 +1,62 @@
-name: PHP Composer
+name: PHP library tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
-# PHP 7.3-7.4: phpunit-9.x
+permissions:
+  contents: read
+
 jobs:
-  build-unit-9:
+  phpunit:
+    name: PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
+      fail-fast: false
       matrix:
-        php-version: [ '7.3', '7.4', '8.0' ]
-    name: PHP ${{ matrix.php-version }}
+        include:
+          - php: '7.0'
+            phpunit: '6.5'
+            composer: 'v2.2'
+          - php: '7.4'
+            phpunit: '9.6'
+            composer: 'v2'
+          - php: '8.2'
+            phpunit: '10'
+            composer: 'v2'
+          - php: '8.4'
+            phpunit: '11'
+            composer: 'v2'
+          - php: '8.5'
+            phpunit: '11'
+            composer: 'v2'
+          - php: '8.6'
+            phpunit: '11'
+            composer: 'v2'
+            experimental: true
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup PHP
+      - uses: actions/checkout@v4
+      - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
-          tools: phpunit
-      - name: Validate composer.json and composer.lock
-        run: composer validate
-      - name: Cache Composer packages
-        id: composer-cache
-        uses: actions/cache@v2
-        with:
-          path: vendor
-          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-php-
-      - name: Install dependencies
-        if: steps.composer-cache.outputs.cache-hit != 'true'
-        run: composer install --prefer-dist --no-progress --no-suggest
-      - name: Install components
-        run: composer install
-      - name: Install phpunit
-        run: composer require phpunit/phpunit:^9
-      - name: vendor/bin/phpunit
-        run: vendor/bin/phpunit
-  build-unit-php5:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php-version: [ '5.6' ]
-    name: PHP ${{ matrix.php-version }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php-version }}
-          tools: phpunit
-      - name: Validate composer.json and composer.lock
-        run: composer validate
-      - name: Cache Composer packages
-        id: composer-cache
-        uses: actions/cache@v2
-        with:
-          path: vendor
-          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-php-
-      - name: Install dependencies
-        if: steps.composer-cache.outputs.cache-hit != 'true'
-        run: composer install --prefer-dist --no-progress --no-suggest
-      - name: Install components
-        run: composer install
-      - name: Install phpunit
-        run: composer require phpunit/phpunit ^5.6
-      - name: vendor/bin/phpunit
-        run: vendor/bin/phpunit
+          php-version: ${{ matrix.php }}
+          tools: composer:${{ matrix.composer }}, phpunit:${{ matrix.phpunit }}
+          extensions: intl
+          coverage: none
+      - name: Validate Composer metadata
+        run: composer validate --no-check-publish
+      - name: Install library dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Run deterministic PHPUnit tests
+        run: phpunit --configuration phpunit.xml
+      - name: Verify PSL updater against the bundled offline snapshot
+        if: matrix.php == '8.4'
+        run: |
+          php -l bin/update-public-suffix-list.php
+          php bin/update-public-suffix-list.php --input-file=resources/public_suffix_list.dat --output-file="$RUNNER_TEMP/psl-rebuilt.dat"
+          grep -v '^//' resources/public_suffix_list.dat | grep . > "$RUNNER_TEMP/psl-current.rules"
+          grep -v '^//' "$RUNNER_TEMP/psl-rebuilt.dat" | grep . > "$RUNNER_TEMP/psl-rebuilt.rules"
+          diff -u "$RUNNER_TEMP/psl-current.rules" "$RUNNER_TEMP/psl-rebuilt.rules"

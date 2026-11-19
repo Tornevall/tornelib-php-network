@@ -169,15 +169,21 @@ class Network
      */
     private function getByClassMap($name, $arguments)
     {
+        $instances = [
+            Proxy::class => $this->PROXY,
+            Domain::class => $this->DOMAIN,
+            Address::class => $this->ADDRESS,
+            Cookie::class => $this->COOKIE,
+        ];
+
         foreach ($this->classMap as $className) {
-            if (class_exists($className)) {
-                $methods = get_class_methods($className);
-                if (in_array($name, $methods)) {
-                    $instance = new $className();
-                    return call_user_func_array([$instance, $name], $arguments);
-                }
+            if (isset($instances[$className]) &&
+                in_array($name, get_class_methods($className), true)
+            ) {
+                return call_user_func_array([$instances[$className], $name], $arguments);
             }
         }
+
         throw new ExceptionHandler(
             sprintf(
                 '%sException: No method with name %s found %s.',
@@ -248,49 +254,26 @@ class Network
      */
     public function __call($name, $arguments)
     {
-        $return = null;
-        $throwThis = null;
-
-        try {
-            $return = $this->getStaticResponse($name, $arguments);
-        } catch (ExceptionHandler $e) {
-            $throwThis = $e;
+        if (method_exists(Statics::class, $name)) {
+            return $this->getStaticResponse($name, $arguments);
         }
 
-        try {
-            $return = $this->getDeprecatedResponse($name, $arguments);
-        } catch (ExceptionHandler $e) {
+        if (method_exists($this->DEPRECATED, $name) ||
+            method_exists($this->DEPRECATED, Strings::returnCamelCase($name))
+        ) {
+            return $this->getDeprecatedResponse($name, $arguments);
         }
 
         if (substr($name, 0, 3) === 'get') {
-            try {
-                $return = $this->get($name);
-            } catch (ExceptionHandler $e) {
-                $throwThis = $e;
+            $propertyName = lcfirst(substr($name, 3));
+            if (isset($this->{$propertyName})) {
+                return $this->{$propertyName};
             }
         }
 
-        if (is_null($return)) {
-            try {
-                $return = $this->getByClassMap($name, $arguments);
-            } catch (ExceptionHandler $e) {
-                $throwThis = $e;
-            }
-        }
-
-        if (is_null($return) && !is_null($throwThis)) {
-            throw new ExceptionHandler(
-                sprintf(
-                    'Method "%s" for %s does not exist or has been deprecated',
-                    $name,
-                    __CLASS__
-                ),
-                Constants::LIB_METHOD_OR_LIBRARY_UNAVAILABLE,
-                $throwThis
-            );
-        }
-
-        return $return;
+        // A valid method may return null; dispatch must not interpret that as
+        // an unknown method or replace it with an unrelated fallback result.
+        return $this->getByClassMap($name, $arguments);
     }
 
     /**
